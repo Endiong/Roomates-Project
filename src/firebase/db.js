@@ -93,12 +93,13 @@ export async function getBanner() {
 
 // ─── PROFILE NOTES (Peer Notes) ────────────────────────────────────
 
-export async function addProfileNote(roommateId, { author, authorNickname, text }) {
+export async function addProfileNote(roommateId, { author, authorNickname, text, template }) {
   return addDoc(collection(db, 'profileNotes'), {
     roommateId,
     author,
     authorNickname,
     text,
+    template: template || 'sticky',
     createdAt: serverTimestamp(),
   });
 }
@@ -112,6 +113,13 @@ export async function getProfileNotes(roommateId) {
   return snap.docs
     .map(d => ({ id: d.id, ...d.data() }))
     .filter(n => n.roommateId === roommateId);
+}
+
+export async function getAllProfileNotes() {
+  // Admin use only — returns all peer notes across every profile
+  const q = query(collection(db, 'profileNotes'), orderBy('createdAt', 'desc'));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 export async function deleteProfileNote(noteId) {

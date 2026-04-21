@@ -4,27 +4,27 @@ import { roommates } from '../data/roommates';
 
 // ── Game Data ─────────────────────────────────────────────────────
 const QUOTES = [
-  { text: "If it's not at least 2 AM, is it even a creative breakthrough?", author: 'aisha' },
-  { text: "Give me a library card and a quiet Sunday, and I will outlast you all.", author: 'sofia' },
-  { text: "A room without plants is like a day without sunshine.", author: 'maya' },
-  { text: "The best stories never start with 'and then I stayed home.'", author: 'elena' },
-  { text: "Some of us are just trying to live slowly in a fast world.", author: 'luna' },
-  { text: "Food is how I say everything I don't know how to put into words.", author: 'chloe' },
-  { text: "I know exactly which pile my keys are in.", author: 'luna' },
-  { text: "Stay green, roommate!", author: 'maya' },
-  { text: "There will be a house-wide inventory audit.", author: 'sofia' },
-  { text: "We wouldn't have it any other way.", author: 'aisha' },
+  { text: "If it's not at least 2 AM, is it even a creative breakthrough?", author: 'divine' },
+  { text: "Give me a library card and a quiet Sunday, and I will outlast you all.", author: 'nova' },
+  { text: "A room without plants is like a day without sunshine.", author: 'joy' },
+  { text: "The best stories never start with 'and then I stayed home.'", author: 'esther' },
+  { text: "Some of us are just trying to live slowly in a fast world.", author: 'ediomo' },
+  { text: "Food is how I say everything I don't know how to put into words.", author: 'endiong' },
+  { text: "I know exactly which pile my keys are in.", author: 'divine' },
+  { text: "Stay green, roommate!", author: 'joy' },
+  { text: "There will be a house-wide inventory audit.", author: 'nova' },
+  { text: "We wouldn't have it any other way.", author: 'esther' },
 ];
 
 const TRIVIA = [
-  { q: "Who moved in with exactly 11 plants on day one?", options: ['Maya', 'Sofia', 'Elena', 'Chloe'], answer: 'Maya' },
-  { q: "Which roommate has read over 300 books?", options: ['Luna', 'Aisha', 'Sofia', 'Maya'], answer: 'Sofia' },
-  { q: "Who started exactly 47 art projects?", options: ['Chloe', 'Elena', 'Aisha', 'Luna'], answer: 'Aisha' },
-  { q: "Who invented the Wednesday Pasta Ritual?", options: ['Maya', 'Chloe', 'Sofia', 'Elena'], answer: 'Chloe' },
-  { q: "Which roommate has taken 280+ Polaroid photos?", options: ['Elena', 'Luna', 'Maya', 'Aisha'], answer: 'Luna' },
-  { q: "Who once got the group lost for 3 hours on a road trip?", options: ['Luna', 'Sofia', 'Elena', 'Chloe'], answer: 'Elena' },
-  { q: "Who 'wins' with the lowest messiness score (5%)?", options: ['Maya', 'Sofia', 'Luna', 'Chloe'], answer: 'Sofia' },
-  { q: "Which roommate has slept through 10 alarms?", options: ['Maya', 'Chloe', 'Elena', 'Aisha'], answer: 'Aisha' },
+  { q: "Who moved in with exactly 11 plants on day one?", options: ['Joy', 'Nova', 'Esther', 'Endiong'], answer: 'Joy' },
+  { q: "Which roommate has read over 300 books?", options: ['Divine', 'Esther', 'Nova', 'Ediomo'], answer: 'Nova' },
+  { q: "Who started exactly 47 art projects?", options: ['Endiong', 'Esther', 'Divine', 'Ediomo'], answer: 'Divine' },
+  { q: "Who invented the Wednesday Pasta Ritual?", options: ['Joy', 'Endiong', 'Nova', 'Esther'], answer: 'Endiong' },
+  { q: "Which roommate has taken 280+ Polaroid photos?", options: ['Esther', 'Ediomo', 'Joy', 'Divine'], answer: 'Ediomo' },
+  { q: "Who once got the group lost for 3 hours on a road trip?", options: ['Ediomo', 'Nova', 'Esther', 'Endiong'], answer: 'Esther' },
+  { q: "Who 'wins' with the lowest messiness score (5%)?", options: ['Joy', 'Nova', 'Ediomo', 'Endiong'], answer: 'Nova' },
+  { q: "Which roommate has slept through 10 alarms?", options: ['Joy', 'Endiong', 'Esther', 'Divine'], answer: 'Divine' },
 ];
 
 const CLASH_TRAITS = [
@@ -91,7 +91,7 @@ function WhoSaidIt() {
           let color = 'var(--on-surface)';
           if (selected) {
             if (id === selected && correct) { bg = '#b9eedb'; color = '#12473a'; }
-            else if (id === selected && !correct) { bg = '#fecbcb'; color = '#815a5b'; }
+            else if (id === selected && !correct) { bg = '#e2d1bc'; color = '#815a5b'; }
             else if (correct) { bg = '#b9eedb'; color = '#12473a'; }
           }
           return (
@@ -228,26 +228,29 @@ function TheClash() {
       </h4>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
         {pair.map((r, side) => (
-          <button
-            key={r.id}
-            onClick={() => setVoted(r.id)}
-            disabled={!!voted}
-            style={{
-              padding: '1rem 0.5rem',
-              borderRadius: '0.75rem',
-              background: voted === r.id ? `${roommateThemes[r.id].accentColor}22` : 'var(--surface-container)',
-              border: `2px solid ${voted ? (r.id === winner.id ? roommateThemes[r.id].accentColor : 'rgba(189,187,146,0.3)') : 'rgba(189,187,146,0.3)'}`,
-              cursor: voted ? 'default' : 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
-              transition: 'all 0.2s',
-            }}
-          >
-            <span style={{ fontSize: '2.5rem' }}>{r.emoji}</span>
-            <span style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '1rem', color: roommateThemes[r.id].accentColor }}>{r.name}</span>
-            <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{r.tagline}</span>
-          </button>
+          <div key={r.id} style={{ display: 'contents' }}>
+            <button
+              onClick={() => setVoted(r.id)}
+              disabled={!!voted}
+              style={{
+                padding: '1rem 0.5rem',
+                borderRadius: '0.75rem',
+                background: voted === r.id ? `${roommateThemes[r.id].accentColor}22` : 'var(--surface-container)',
+                border: `2px solid ${voted ? (r.id === winner.id ? roommateThemes[r.id].accentColor : 'rgba(189,187,146,0.3)') : 'rgba(189,187,146,0.3)'}`,
+                cursor: voted ? 'default' : 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+                transition: 'all 0.2s',
+              }}
+            >
+              <span style={{ fontSize: '2.5rem' }}>{r.emoji}</span>
+              <span style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '1rem', color: roommateThemes[r.id].accentColor }}>{r.name}</span>
+              <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{r.tagline}</span>
+            </button>
+            {side === 0 && (
+              <div style={{ textAlign: 'center', fontFamily: 'var(--font-headline)', fontWeight: 900, fontSize: '1.5rem', color: 'var(--outline-variant)' }}>VS</div>
+            )}
+          </div>
         ))}
-        <div style={{ textAlign: 'center', fontFamily: 'var(--font-headline)', fontWeight: 900, fontSize: '1.5rem', color: 'var(--outline-variant)' }}>VS</div>
       </div>
 
       {voted && (
@@ -325,7 +328,7 @@ function ChaosTrivia() {
           let color = 'var(--on-surface)';
           if (selected) {
             if (opt === q.answer) { bg = '#b9eedb'; color = '#12473a'; }
-            else if (opt === selected) { bg = '#fecbcb'; color = '#815a5b'; }
+            else if (opt === selected) { bg = '#e2d1bc'; color = '#815a5b'; }
           }
           return (
             <button key={opt} onClick={() => pick(opt)} style={{
@@ -367,7 +370,7 @@ const GAMES = [
     icon: 'casino',
     description: 'Spin the wheel and discover a random roomie fact!',
     color: 'var(--primary)',
-    bg: 'rgba(254,203,203,0.3)',
+    bg: 'rgba(226,209,188,0.3)',
     Component: RoommieRoulette,
   },
   {

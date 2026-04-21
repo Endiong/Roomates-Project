@@ -8,8 +8,10 @@ import { useAuth } from '../context/AuthContext';
 import {
   getAllMemoriesAdmin,
   getAllUsers,
+  getAllProfileNotes,
   setMemoryVisible,
   deleteMemory,
+  deleteProfileNote,
   setBanner,
   getBanner,
   updateUserPin,
@@ -21,7 +23,7 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
 };
 
-const TABS = ['Overview', 'Memories', 'Users', 'Banner'];
+const TABS = ['Overview', 'Memories', 'Profile Notes', 'Users', 'Banner'];
 
 export default function Admin() {
   const { currentUser, isAdmin } = useAuth();
@@ -30,6 +32,8 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('Overview');
   const [memories, setMemories] = useState([]);
   const [users, setUsers] = useState([]);
+  const [profileNotes, setProfileNotes] = useState([]);
+  const [memFilter, setMemFilter] = useState('all');
   const [banner, setBannerText] = useState('');
   const [bannerInput, setBannerInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -52,15 +56,17 @@ export default function Admin() {
     async function load() {
       setLoading(true);
       try {
-        const [mems, usrs, bnr] = await Promise.all([
+        const [mems, usrs, bnr, notes] = await Promise.all([
           getAllMemoriesAdmin(),
           getAllUsers(),
           getBanner(),
+          getAllProfileNotes(),
         ]);
         setMemories(mems);
         setUsers(usrs);
         setBannerText(bnr || '');
         setBannerInput(bnr || '');
+        setProfileNotes(notes);
       } catch (e) {
         showToast('Failed to load data: ' + e.message, 'error');
       }
@@ -123,6 +129,17 @@ export default function Admin() {
   const visibleMems = memories.filter(m => m.visible !== false).length;
   const hiddenMems = memories.filter(m => m.visible === false).length;
   const totalUsers = users.filter(u => u.role !== 'admin').length;
+
+  // Author options for memory filter
+  const allAuthors = [...new Set(memories.map(m => m.author).filter(Boolean))];
+  const filteredMemories = memFilter === 'all' ? memories : memories.filter(m => m.author === memFilter);
+
+  async function handleDeleteNote(noteId) {
+    if (!confirm('Delete this note permanently?')) return;
+    await deleteProfileNote(noteId);
+    setProfileNotes(prev => prev.filter(n => n.id !== noteId));
+    showToast('Note deleted.', 'error');
+  }
 
   const accent = '#815a5b';
 
@@ -223,7 +240,7 @@ export default function Admin() {
                 </div>
 
                 {/* What Needs Filling */}
-                <div style={{ marginTop: '1.5rem', background: 'rgba(254,203,203,0.15)', padding: '1.5rem', borderRadius: '0.75rem', border: '1.5px dashed rgba(129,90,91,0.3)' }}>
+                <div style={{ marginTop: '1.5rem', background: 'rgba(226,209,188,0.15)', padding: '1.5rem', borderRadius: '0.75rem', border: '1.5px dashed rgba(129,90,91,0.3)' }}>
                   <h2 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '1rem', color: accent, marginBottom: '1rem' }}>📋 What Still Needs Filling</h2>
                   <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.8rem', color: 'var(--on-surface-variant)', marginBottom: '0.75rem' }}>Once the Google Form responses come in, update these in <code>roommates.js</code>:</p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.6rem' }}>
@@ -255,22 +272,33 @@ export default function Admin() {
             {/* ── MEMORIES TAB ── */}
             {activeTab === 'Memories' && (
               <motion.div initial="hidden" animate="show" variants={fadeUp}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <h2 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--on-surface)' }}>
-                    All Memories ({memories.length})
+                    All Memories ({filteredMemories.length}/{memories.length})
                   </h2>
-                  <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.7rem', color: 'var(--outline)' }}>
-                    {visibleMems} visible · {hiddenMems} hidden
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.7rem', color: 'var(--outline)' }}>
+                      {visibleMems} visible · {hiddenMems} hidden
+                    </span>
+                    {/* Author filter */}
+                    <select
+                      value={memFilter}
+                      onChange={e => setMemFilter(e.target.value)}
+                      style={{ padding: '0.3rem 0.6rem', borderRadius: 'var(--radius-full)', border: '1.5px solid rgba(189,187,146,0.4)', background: 'var(--background)', fontFamily: 'var(--font-label)', fontSize: '0.75rem', color: 'var(--on-surface)', cursor: 'pointer', outline: 'none' }}
+                    >
+                      <option value="all">All authors</option>
+                      {allAuthors.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
+                  </div>
                 </div>
 
-                {memories.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--outline)', fontFamily: 'var(--font-handwritten)', fontSize: '1.25rem' }}>
+                {filteredMemories.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--outline)', fontFamily: "'Nanum Pen Script', cursive", fontSize: '1.25rem' }}>
                     No memories yet. Be the first to add one! 📸
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {memories.map(mem => (
+                    {filteredMemories.map(mem => (
                       <div key={mem.id} style={{ background: 'var(--surface-container)', padding: '1rem', borderRadius: '0.75rem', border: '1px solid rgba(189,187,146,0.2)', display: 'flex', gap: '1rem', alignItems: 'center', opacity: mem.visible === false ? 0.55 : 1 }}>
                         {/* Thumbnail */}
                         <div style={{ width: '3.5rem', height: '3.5rem', borderRadius: '0.5rem', overflow: 'hidden', flexShrink: 0, background: '#f0ede0' }}>
@@ -313,6 +341,59 @@ export default function Admin() {
                             <span className="material-symbols-outlined" style={{ fontSize: '0.875rem', color: '#be2d06' }}>delete</span>
                           </button>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ── PROFILE NOTES TAB ── */}
+            {activeTab === 'Profile Notes' && (
+              <motion.div initial="hidden" animate="show" variants={fadeUp}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h2 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--on-surface)' }}>
+                    Profile Notes ({profileNotes.length})
+                  </h2>
+                  <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.7rem', color: 'var(--outline)' }}>Moderation only — delete rule-violating content</p>
+                </div>
+
+                {profileNotes.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--outline)', fontFamily: "'Nanum Pen Script', cursive", fontSize: '1.25rem' }}>
+                    No peer notes yet! 📝
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    {profileNotes.map(note => (
+                      <div key={note.id} style={{ background: 'var(--surface-container)', padding: '0.85rem 1rem', borderRadius: '0.65rem', border: '1px solid rgba(189,187,146,0.2)', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
+                            <span style={{ padding: '0.1rem 0.5rem', borderRadius: 'var(--radius-full)', background: 'rgba(189,187,146,0.25)', fontFamily: 'var(--font-label)', fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--on-surface-variant)' }}>
+                              on {note.roommateId}'s page
+                            </span>
+                            <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.6rem', color: 'var(--outline)' }}>
+                              by {note.author}
+                            </span>
+                            {note.template && (
+                              <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.58rem', color: 'var(--outline)', opacity: 0.7 }}>· {note.template}</span>
+                            )}
+                          </div>
+                          <p style={{ fontFamily: "'Nanum Pen Script', cursive", fontSize: '0.95rem', color: 'var(--on-surface)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                            {note.text}
+                          </p>
+                          {note.createdAt?.toDate && (
+                            <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.6rem', color: 'var(--outline)', marginTop: '0.15rem', opacity: 0.6 }}>
+                              {note.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteNote(note.id)}
+                          title="Delete note permanently"
+                          style={{ width: '2rem', height: '2rem', borderRadius: '0.4rem', border: '1.5px solid rgba(190,45,6,0.25)', background: 'rgba(190,45,6,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '0.875rem', color: '#be2d06' }}>delete</span>
+                        </button>
                       </div>
                     ))}
                   </div>

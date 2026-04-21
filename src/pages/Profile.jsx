@@ -6,6 +6,10 @@ import { useAuth } from '../context/AuthContext';
 import { setProfile, addProfileNote, getProfileNotes, deleteProfileNote } from '../firebase/db';
 import { uploadPhoto } from '../firebase/storage';
 
+// ── NOTE TEMPLATES ─────────────────────
+import { TEXT_TEMPLATES } from '../data/templates';
+import ProfileEditModal from '../components/ProfileEditModal';
+
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.55 } } };
 const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.09 } } };
 
@@ -58,27 +62,58 @@ export default function Profile() {
   const { id } = useParams();
   const { currentUser, isOwner } = useAuth();
   const roommate = roommates.find(r => r.id === id);
-  const theme = roommateThemes[id] || roommateThemes.maya;
+  const baseTheme = roommateThemes[id] || roommateThemes.maya;
 
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [customNote, setCustomNote] = useState('');
   const [customQuote, setCustomQuote] = useState('');
+  const [customRoomVibe, setCustomRoomVibe] = useState('');
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [profileImg, setProfileImg] = useState(roommate?.avatar);
+
+  // Theme colour customisation
+  const [themeColor, setThemeColor] = useState(null); // null = use default
+  const [colorSaving, setColorSaving] = useState(false);
 
   // Peer Notes
   const [peerNotes, setPeerNotes] = useState([]);
   const [noteInput, setNoteInput] = useState('');
+  const [noteTemplate, setNoteTemplate] = useState('sticky');
   const [sendingNote, setSendingNote] = useState(false);
+
+  // Computed theme — merge Firestore colour override into base theme
+  const theme = themeColor
+    ? {
+        ...baseTheme,
+        accentColor: themeColor,
+        dotColor: themeColor + '66',
+        patternStyle: `radial-gradient(${themeColor}66 1.5px, transparent 1.5px)`,
+        washibg: themeColor + 'bb',
+        accentContainer: themeColor + '33',
+      }
+    : baseTheme;
 
   useEffect(() => {
     setProfileImg(roommate?.avatar);
     setCustomNote(roommate?.finalNote || '');
     setCustomQuote(roommate?.quote || '');
     window.scrollTo(0, 0);
-    // Load peer notes
     getProfileNotes(id).then(setPeerNotes).catch(console.error);
+    // Load saved theme colour and data overrrides from Firestore
+    import('../firebase/db').then(({ getProfileOverrides }) => {
+      getProfileOverrides(id).then(data => {
+        if (data) {
+          if (data.themeColor) setThemeColor(data.themeColor);
+          if (data.avatar) setProfileImg(data.avatar);
+          if (data.finalNote) setCustomNote(data.finalNote);
+          if (data.quote) setCustomQuote(data.quote);
+          if (data.roomVibe) setCustomRoomVibe(data.roomVibe);
+          if (data.isDarkTheme) setIsDarkTheme(data.isDarkTheme);
+        }
+      }).catch(() => {});
+    });
   }, [id, roommate]);
 
   if (!roommate) {
@@ -99,6 +134,8 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingPhoto(true);
+    const tempUrl = URL.createObjectURL(file);
+    setProfileImg(tempUrl);
     try {
       const url = await uploadPhoto(file);
       setProfileImg(url);
@@ -122,17 +159,45 @@ export default function Profile() {
     }
   }
 
+  async function saveThemeColor(color) {
+    setThemeColor(color);
+    setColorSaving(true);
+    try {
+      await setProfile(id, { themeColor: color });
+    } catch (err) {
+      console.error('Color save failed:', err);
+    } finally {
+      setColorSaving(false);
+    }
+  }
+
   const accent = theme.accentColor;
   const handCss = { fontFamily: theme.handwrittenFont };
 
   return (
     <div style={{
-      background: theme.dotBg,
-      backgroundImage: theme.patternStyle,
+      background: isDarkTheme ? '#141414' : theme.dotBg,
+      backgroundImage: isDarkTheme ? `radial-gradient(rgba(255,255,255,0.06) 1.5px, transparent 1.5px)` : theme.patternStyle,
       backgroundSize: theme.patternSize,
       minHeight: '100vh',
     }}>
       <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '3rem 1.25rem 5rem' }}>
+
+        {editMode && isOwner(id) && (
+          <ProfileEditModal
+            roommate={roommate}
+            currentData={{ finalNote: customNote, quote: customQuote, roomVibe: customRoomVibe, isDarkTheme, themeColor }}
+            onClose={() => setEditMode(false)}
+            onSave={async (data) => {
+              await setProfile(id, data);
+              if (data.finalNote !== undefined) setCustomNote(data.finalNote);
+              if (data.quote !== undefined) setCustomQuote(data.quote);
+              if (data.roomVibe !== undefined) setCustomRoomVibe(data.roomVibe);
+              if (data.isDarkTheme !== undefined) setIsDarkTheme(data.isDarkTheme);
+              setEditMode(false);
+            }}
+          />
+        )}
 
         {/* ─── HERO HEADER ─── */}
         <motion.header
@@ -164,28 +229,61 @@ export default function Profile() {
             <span className="material-symbols-outlined" style={{ fontSize: '4rem', fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
           </div>
 
-          {/* Edit mode button */}
+          {/* Edit mode button + colour wheel */}
           {isOwner(id) && (
-            <motion.div variants={fadeUp} style={{ marginTop: '1rem' }}>
-              <button
-                onClick={() => setEditMode(e => !e)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-                  padding: '0.5rem 1.25rem',
-                  background: editMode ? 'var(--error)' : accent,
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 'var(--radius-full)',
-                  fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 3px 12px rgba(0,0,0,0.15)',
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
-                  {editMode ? 'close' : 'edit'}
-                </span>
-                {editMode ? 'Cancel Edit' : '✏️ Edit My Page'}
-              </button>
+            <motion.div variants={fadeUp} style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button
+                  onClick={() => setEditMode(e => !e)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                    padding: '0.5rem 1.25rem',
+                    background: editMode ? 'var(--error)' : accent,
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 'var(--radius-full)',
+                    fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 3px 12px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>
+                    edit
+                  </span>
+                  Edit My Page
+                </button>
+
+                {/* Colour wheel picker */}
+                <label
+                  title="Change your theme colour"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                    padding: '0.45rem 1rem',
+                    background: 'white',
+                    border: `2px solid ${accent}44`,
+                    borderRadius: 'var(--radius-full)',
+                    fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                    color: accent,
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>palette</span>
+                  {colorSaving ? 'Saving...' : 'My Colour'}
+                  {/* Hidden colour input */}
+                  <input
+                    type="color"
+                    defaultValue={accent}
+                    onChange={e => saveThemeColor(e.target.value)}
+                    style={{ position: 'absolute', opacity: 0, width: '100%', height: '100%', top: 0, left: 0, cursor: 'pointer' }}
+                  />
+                </label>
+
+                {/* Colour preview dot */}
+                <div style={{ width: '2.2rem', height: '2.2rem', borderRadius: '50%', background: accent, border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} title={`Current: ${accent}`} />
+              </div>
             </motion.div>
           )}
         </motion.header>
@@ -220,11 +318,15 @@ export default function Profile() {
               }} />
               {/* Photo */}
               <div style={{ aspectRatio: '1', overflow: 'hidden', background: 'var(--surface-variant)', position: 'relative' }}>
-                <img
-                  src={profileImg}
-                  alt={roommate.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+                {profileImg ? (
+                  <img
+                    src={profileImg}
+                    alt={roommate.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: accent, opacity: 0.8 }} />
+                )}
                 {/* Photo upload overlay */}
                 {editMode && isOwner(id) && (
                   <label style={{
@@ -244,7 +346,7 @@ export default function Profile() {
               <div style={{ textAlign: 'center', marginTop: '0.75rem' }}>
                 <p style={{ ...handCss, fontSize: '1.75rem', color: 'var(--on-surface)' }}>{roommate.polaroidCaption}</p>
                 <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--outline)', marginTop: '0.2rem' }}>
-                  {roommate.name} {roommate.surname} • 2024
+                  {roommate.name} {roommate.surname}
                 </p>
               </div>
             </div>
@@ -268,7 +370,7 @@ export default function Profile() {
                 {[
                   { label: 'Name', value: `${roommate.name} ${roommate.surname}`.trim() },
                   { label: 'Nickname', value: roommate.nickname },
-                  { label: 'Room Vibe', value: roommate.roomVibe },
+                  { label: 'Room Vibe', value: customRoomVibe || roommate.roomVibe },
                   { label: 'MBTI', value: roommate.mbti || 'TBD — ask her!' },
                   { label: 'Birthday', value: roommate.birthday || 'TBD ✦' },
                   { label: 'Level', value: roommate.level ? `${roommate.level}` : 'TBD' },
@@ -312,8 +414,8 @@ export default function Profile() {
                 { label: 'Love Language', value: roommate.loveLanguage || 'TBD ✦', icon: 'favorite' },
                 { label: 'Favourite Food', value: roommate.favoriteFood || roommate.comfortFood || 'TBD ✦', icon: roommate.comfortFoodIcon || 'restaurant' },
                 { label: 'MBTI', value: roommate.mbti || 'TBD', icon: 'psychology' },
-                { label: '5-Year Dream', value: roommate.fiveYearDream || 'Coming soon... ✨', icon: 'star' },
-                { label: 'Room Vibe', value: roommate.roomVibe || 'TBD', icon: 'home' },
+                { label: '5-Year Dream', value: roommate.fiveYearDream || 'Coming soon...', icon: 'star' },
+                { label: 'Room Vibe', value: customRoomVibe || roommate.roomVibe || 'TBD', icon: 'home' },
               ].map(item => (
                 <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
                   <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: `${accent}1a`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -377,7 +479,7 @@ export default function Profile() {
 
             {/* Red & Green Flags */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div style={{ background: 'rgba(254,203,203,0.3)', padding: '1.25rem', borderRadius: '0.5rem' }}>
+              <div style={{ background: 'rgba(226,209,188,0.3)', padding: '1.25rem', borderRadius: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
                   <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--error)', fontVariationSettings: "'FILL' 1" }}>flag</span>
                   <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '0.875rem', color: 'var(--error)' }}>Red Flags</h3>
@@ -429,24 +531,9 @@ export default function Profile() {
               paddingBottom: '2rem',
             }}>
               <div style={{ position: 'absolute', top: '0.5rem', left: '1.25rem', color: accent, fontSize: '3rem', opacity: 0.15, fontFamily: 'Georgia, serif', lineHeight: 1 }}>"</div>
-              {editMode && isOwner(id) ? (
-                <textarea
-                  value={customQuote}
-                  onChange={e => setCustomQuote(e.target.value)}
-                  rows={3}
-                  style={{
-                    width: '100%', boxSizing: 'border-box',
-                    fontFamily: theme.handwrittenFont, fontSize: '1.3rem',
-                    border: `1.5px solid ${accent}`, borderRadius: '0.5rem',
-                    padding: '0.5rem', background: 'transparent', color: 'var(--on-surface)',
-                    resize: 'vertical',
-                  }}
-                />
-              ) : (
-                <p style={{ ...handCss, fontSize: '1.4rem', color: 'var(--on-surface)', lineHeight: 1.5, marginLeft: '1rem' }}>
-                  {customQuote || roommate.quote}
-                </p>
-              )}
+              <p style={{ ...handCss, fontSize: '1.4rem', color: 'var(--on-surface)', lineHeight: 1.5, marginLeft: '1rem' }}>
+                {customQuote || roommate.quote}
+              </p>
               <div style={{ marginTop: '0.75rem', textAlign: 'right' }}>
                 <span style={{ fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.8rem', color: accent }}>— {roommate.name}</span>
               </div>
@@ -545,20 +632,26 @@ export default function Profile() {
               ))}
             </div>
 
-            {/* My First Impression Of... */}
-            {roommate.myFirstImpressionOf && (
-              <div style={{ background: `${accent}10`, padding: '1.25rem', borderRadius: '0.5rem', border: `1.5px dashed ${accent}33` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: accent, fontVariationSettings: "'FILL' 1" }}>visibility</span>
-                  <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '0.85rem', color: accent }}>First One I Noticed</h3>
-                </div>
-                <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--on-surface-variant)', marginBottom: '0.4rem' }}>
-                  My first impression of {roommate.myFirstImpressionOf.personName}...
-                </p>
-                <p style={{ ...handCss, fontSize: '1rem', color: 'var(--on-surface)', lineHeight: 1.5 }}>
-                  {roommate.myFirstImpressionOf.text}
-                </p>
-              </div>
+            {/* My First Impressions */}
+            {(roommate.firstImpressions?.length > 0 || roommate.myFirstImpressionOf) && (
+               <div style={{ background: `${accent}10`, padding: '1.25rem', borderRadius: '0.5rem', border: `1.5px dashed ${accent}33` }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem' }}>
+                   <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: accent, fontVariationSettings: "'FILL' 1" }}>visibility</span>
+                   <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '0.85rem', color: accent }}>My First Impressions</h3>
+                 </div>
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                   {(roommate.firstImpressions || [roommate.myFirstImpressionOf]).map((imp, i) => imp && (
+                     <div key={i}>
+                       <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--on-surface-variant)', marginBottom: '0.4rem' }}>
+                         On {imp.personName}...
+                       </p>
+                       <p style={{ ...handCss, fontSize: '1.05rem', color: 'var(--on-surface)', lineHeight: 1.5 }}>
+                         {imp.text}
+                       </p>
+                     </div>
+                   ))}
+                 </div>
+               </div>
             )}
           </motion.div>
         </motion.div>
@@ -583,48 +676,15 @@ export default function Profile() {
 
             <h3 style={{ ...handCss, fontSize: '2rem', color: accent, marginBottom: '1rem' }}>Final Notes...</h3>
 
-            {editMode && isOwner(id) ? (
-              <textarea
-                value={customNote}
-                onChange={e => setCustomNote(e.target.value)}
-                rows={6}
-                style={{
-                  width: '100%', boxSizing: 'border-box',
-                  fontFamily: theme.handwrittenFont, fontSize: '1.3rem',
-                  border: `1.5px solid ${accent}`, borderRadius: '0.5rem',
-                  padding: '0.75rem', background: 'transparent', color: 'var(--on-surface)',
-                  resize: 'vertical', lineHeight: 1.6,
-                }}
-              />
-            ) : (
-              <p style={{ ...handCss, fontSize: '1.35rem', color: 'var(--on-surface)', lineHeight: 1.7 }}>
-                {customNote || roommate.finalNote}
-              </p>
-            )}
+            <p style={{ ...handCss, fontSize: '1.35rem', color: 'var(--on-surface)', lineHeight: 1.7 }}>
+              {customNote || roommate.finalNote}
+            </p>
 
             <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', color: accent, opacity: 0.35 }}>
               <span className="material-symbols-outlined" style={{ fontSize: '1.75rem' }}>favorite</span>
               <span className="material-symbols-outlined" style={{ fontSize: '1.75rem' }}>draw</span>
               <span className="material-symbols-outlined" style={{ fontSize: '1.75rem' }}>stars</span>
             </div>
-
-            {/* Save button */}
-            {editMode && isOwner(id) && (
-              <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={() => setEditMode(false)}
-                  style={{ padding: '0.6rem 1.25rem', background: 'transparent', border: `1.5px solid ${accent}44`, borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 600, fontSize: '0.875rem', color: 'var(--on-surface-variant)', cursor: 'pointer' }}>
-                  Cancel
-                </button>
-                <button
-                  onClick={saveEdits}
-                  disabled={saving}
-                  style={{ padding: '0.6rem 1.5rem', background: accent, border: 'none', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.875rem', color: 'white', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>save</span>
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            )}
           </div>
         </motion.section>
 
@@ -635,7 +695,7 @@ export default function Profile() {
             style={{ maxWidth: '48rem', margin: '2rem auto 0' }}
           >
             <div style={{
-              background: 'rgba(254,203,203,0.15)',
+              background: 'rgba(226,209,188,0.15)',
               padding: '2rem',
               borderRadius: '0.5rem',
               border: '1.5px dashed rgba(129,90,91,0.25)',
@@ -651,7 +711,7 @@ export default function Profile() {
                 {roommate.loveLetter}
               </p>
               <p style={{ fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.8rem', color: accent, textAlign: 'right', marginTop: '1rem' }}>
-                — {roommate.name} 💌
+                — {roommate.name}
               </p>
             </div>
           </motion.section>
@@ -660,27 +720,74 @@ export default function Profile() {
         {/* ─── PEER NOTES ─── */}
         <motion.section
           initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}
-          style={{ maxWidth: '48rem', margin: '2rem auto 0' }}
+          style={{ maxWidth: '52rem', margin: '2rem auto 0' }}
         >
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
               <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', color: accent, fontVariationSettings: "'FILL' 1" }}>sticky_note_2</span>
               <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '1.1rem', color: accent }}>Notes from the Girlies</h3>
             </div>
-            <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.75rem', color: 'var(--on-surface-variant)' }}>Leave {roommate.name} a note, a first impression, or a love message.</p>
+            <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.75rem', color: 'var(--on-surface-variant)' }}>Leave {roommate.name} a note, a first impression, or a love message — choose your style!</p>
           </div>
 
           {/* Note Input — only for logged-in non-owners */}
           {currentUser && !isOwner(id) && (
-            <div style={{ background: 'rgba(248,246,195,0.7)', padding: '1.25rem', borderRadius: '0.5rem', border: '1.5px dashed rgba(189,187,146,0.5)', marginBottom: '1.5rem', position: 'relative' }}>
-              <div style={{ position: 'absolute', top: '-0.55rem', left: '50%', transform: 'translateX(-50%)', width: '3.5rem', height: '1rem', background: 'rgba(185,238,219,0.7)' }} />
-              <textarea
-                value={noteInput}
-                onChange={e => setNoteInput(e.target.value)}
-                placeholder={`Write something for ${roommate.name}...`}
-                rows={3}
-                style={{ width: '100%', boxSizing: 'border-box', background: 'transparent', border: 'none', fontFamily: 'var(--font-handwritten)', fontSize: '1.1rem', color: 'var(--on-surface)', resize: 'none', outline: 'none', marginBottom: '0.75rem' }}
-              />
+            <div style={{ marginBottom: '1.75rem' }}>
+              {/* Template mini-picker */}
+              <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--on-surface-variant)', marginBottom: '0.5rem' }}>Choose note style:</p>
+              <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                {TEXT_TEMPLATES.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setNoteTemplate(t.id)}
+                    style={{
+                      padding: '0.3rem 0.75rem',
+                      borderRadius: 'var(--radius-full)',
+                      border: `1.5px solid ${noteTemplate === t.id ? t.border : 'rgba(189,187,146,0.35)'}`,
+                      background: noteTemplate === t.id ? t.bg : 'transparent',
+                      fontFamily: 'var(--font-label)', fontWeight: 700, fontSize: '0.72rem',
+                      cursor: 'pointer',
+                      color: noteTemplate === t.id ? t.accent : 'var(--on-surface-variant)',
+                      display: 'flex', alignItems: 'center', gap: '0.3rem',
+                      transition: 'all 0.18s',
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>{t.icon}</span>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              {/* Live note preview / input */}
+              {(() => {
+                const tpl = TEXT_TEMPLATES.find(t => t.id === noteTemplate);
+                return (
+                  <div style={{
+                    background: tpl.bg,
+                    border: `2px solid ${tpl.border}44`,
+                    borderRadius: tpl.clipPath ? 0 : '0.5rem',
+                    clipPath: tpl.clipPath,
+                    padding: '1.2rem 1.2rem 0.9rem',
+                    position: 'relative',
+                    ...(tpl.extraStyle || {}),
+                    marginBottom: '0.75rem',
+                  }}>
+                    {tpl.washiStrips && (
+                      <>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '5px', background: `${tpl.border}80`, backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,255,255,0.3) 8px, rgba(255,255,255,0.3) 10px)' }} />
+                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '5px', background: `${tpl.border}80`, backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,255,255,0.3) 8px, rgba(255,255,255,0.3) 10px)' }} />
+                      </>
+                    )}
+                    <div style={{ position: 'absolute', top: '-6px', left: '50%', transform: 'translateX(-50%)', width: '9px', height: '9px', borderRadius: '50%', background: tpl.pinColor, boxShadow: '0 2px 5px rgba(0,0,0,0.25)' }} />
+                    <textarea
+                      value={noteInput}
+                      onChange={e => setNoteInput(e.target.value)}
+                      placeholder={`Write something for ${roommate.name}...`}
+                      rows={3}
+                      style={{ width: '100%', boxSizing: 'border-box', background: 'transparent', border: 'none', fontFamily: "'Nanum Pen Script', cursive", fontSize: '1.1rem', color: 'var(--on-surface)', resize: 'none', outline: 'none', paddingTop: tpl.washiStrips ? '0.5rem' : 0 }}
+                    />
+                  </div>
+                );
+              })()}
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   disabled={!noteInput.trim() || sendingNote}
@@ -692,65 +799,83 @@ export default function Profile() {
                         author: currentUser.displayNickname || currentUser.nickname,
                         authorNickname: currentUser.nickname,
                         text: noteInput.trim(),
+                        template: noteTemplate,
                       });
                       const updated = await getProfileNotes(id);
                       setPeerNotes(updated);
                       setNoteInput('');
+                      setNoteTemplate('sticky');
                     } catch (e) { console.error(e); }
                     setSendingNote(false);
                   }}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.5rem 1.1rem', background: noteInput.trim() ? accent : 'rgba(189,187,146,0.3)', color: noteInput.trim() ? 'white' : 'var(--outline)', border: 'none', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.85rem', cursor: noteInput.trim() ? 'pointer' : 'not-allowed' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.55rem 1.2rem', background: noteInput.trim() ? accent : 'rgba(189,187,146,0.3)', color: noteInput.trim() ? 'white' : 'var(--outline)', border: 'none', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.85rem', cursor: noteInput.trim() ? 'pointer' : 'not-allowed', boxShadow: noteInput.trim() ? `0 4px 14px ${accent}44` : 'none', transition: 'all 0.2s' }}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>send</span>
-                  {sendingNote ? 'Sending...' : 'Drop a note'}
+                  {sendingNote ? 'Sending...' : 'Drop the note'}
                 </button>
               </div>
             </div>
           )}
 
-          {/* Notes Grid */}
+          {/* Notes Grid — rendered with scrapbook templates */}
           {peerNotes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--outline)' }}>
-              <p style={{ fontFamily: 'var(--font-handwritten)', fontSize: '1.15rem' }}>No notes yet... be the first!</p>
+              <p style={{ fontFamily: "'Nanum Pen Script', cursive", fontSize: '1.15rem' }}>No notes yet... be the first!</p>
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.25rem' }}>
+            <div className="masonry-wall">
               {peerNotes.map((note, i) => {
-                const noteColors = [
-                  'rgba(254,252,203,0.9)',
-                  'rgba(185,238,219,0.4)',
-                  'rgba(250,211,253,0.3)',
-                  'rgba(245,224,181,0.5)',
-                ];
-                const pinColors = ['#bdbb92', '#3c6d5e', '#785a7e', '#be7d2d'];
+                const tpl = TEXT_TEMPLATES.find(t => t.id === note.template) || TEXT_TEMPLATES[0];
+                const rotation = [-1.5, 1.5, -1, 2][i % 4];
                 return (
-                  <div
-                    key={note.id}
-                    style={{
-                      background: noteColors[i % 4],
-                      padding: '1rem',
-                      borderRadius: '0.25rem',
-                      boxShadow: '0 4px 14px rgba(57,57,27,0.09)',
-                      transform: `rotate(${[-1.5, 1.5, -1, 2][i % 4]}deg)`,
-                      position: 'relative',
-                    }}
-                  >
-                    <div style={{ position: 'absolute', top: '-0.5rem', left: '50%', transform: 'translateX(-50%)', width: '8px', height: '8px', borderRadius: '50%', background: pinColors[i % 4], boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
-                    <p style={{ fontFamily: 'var(--font-handwritten)', fontSize: '1rem', color: 'var(--on-surface)', lineHeight: 1.6, marginBottom: '0.6rem' }}>{note.text}</p>
-                    <p style={{ fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--outline)', textAlign: 'right' }}>
-                      — {note.author}
-                    </p>
-                    {(isOwner(id) || currentUser?.nickname === note.authorNickname) && (
-                      <button
-                        onClick={async () => {
-                          await deleteProfileNote(note.id);
-                          setPeerNotes(prev => prev.filter(n => n.id !== note.id));
-                        }}
-                        style={{ position: 'absolute', top: '0.4rem', right: '0.4rem', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4 }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '0.85rem', color: '#be2d06' }}>close</span>
-                      </button>
-                    )}
+                  <div key={note.id} className="masonry-item">
+                    <div
+                      style={{
+                        background: tpl.bg,
+                        borderRadius: tpl.clipPath ? 0 : '0.35rem',
+                        clipPath: tpl.clipPath,
+                        padding: '1.1rem 1rem 0.9rem',
+                        boxShadow: tpl.extraStyle?.boxShadow || '0 4px 14px rgba(57,57,27,0.09)',
+                        transform: `rotate(${rotation}deg)`,
+                        position: 'relative',
+                        transition: 'transform 0.3s, box-shadow 0.3s',
+                        ...(tpl.extraStyle || {}),
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.transform = 'rotate(0deg) scale(1.04)'}
+                      onMouseLeave={e => e.currentTarget.style.transform = `rotate(${rotation}deg)`}
+                    >
+                      {tpl.washiStrips && (
+                        <>
+                          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '5px', background: `${tpl.border}80`, backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,255,255,0.3) 8px, rgba(255,255,255,0.3) 10px)' }} />
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '5px', background: `${tpl.border}80`, backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 8px, rgba(255,255,255,0.3) 8px, rgba(255,255,255,0.3) 10px)' }} />
+                        </>
+                      )}
+                      <div style={{ position: 'absolute', top: '-0.5rem', left: '50%', transform: 'translateX(-50%)', width: '9px', height: '9px', borderRadius: '50%', background: tpl.pinColor, boxShadow: '0 2px 5px rgba(0,0,0,0.22)' }} />
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.5rem', borderBottom: `1px solid ${tpl.border}33`, paddingBottom: '0.4rem' }}>
+                        <div>
+                          <p style={{ fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.67rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: tpl.accent }}>
+                            {note.author}
+                          </p>
+                          {note.createdAt?.toDate && (
+                            <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.55rem', color: 'var(--outline)', opacity: 0.65, marginTop: '0.1rem' }}>
+                              {note.createdAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                            </p>
+                          )}
+                        </div>
+                        {currentUser?.nickname?.toLowerCase() === note.authorNickname?.toLowerCase() && (
+                          <button
+                            onClick={async () => {
+                              await deleteProfileNote(note.id);
+                              setPeerNotes(prev => prev.filter(n => n.id !== note.id));
+                            }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4, padding: '0.15rem', display: 'flex', flexShrink: 0 }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '0.85rem', color: '#be2d06' }}>close</span>
+                          </button>
+                        )}
+                      </div>
+                      <p style={{ fontFamily: "'Nanum Pen Script', cursive", fontSize: '1rem', color: 'var(--on-surface)', lineHeight: 1.6 }}>{note.text}</p>
+                    </div>
                   </div>
                 );
               })}

@@ -22,7 +22,7 @@ export default function Login() {
       }}>
         <span className="material-symbols-outlined" style={{ fontSize: '4rem', color: 'var(--secondary)' }}>check_circle</span>
         <h2 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '1.75rem', color: 'var(--primary)' }}>
-          You're in, {currentUser.displayNickname}! 🎉
+          You're in, {currentUser.displayNickname}!
         </h2>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
           <Link to={`/profile/${currentUser.roommateId}`}
@@ -134,7 +134,7 @@ export default function Login() {
               fontSize: '1.1rem',
               color: 'var(--on-surface-variant)',
             }}>
-              Sign into the scrapbook 📷
+              Sign into the scrapbook
             </p>
           </div>
 
@@ -243,7 +243,7 @@ export default function Login() {
             {error && (
               <div style={{
                 padding: '0.65rem 1rem',
-                background: 'rgba(254,203,203,0.5)',
+                background: 'rgba(226,209,188,0.5)',
                 borderRadius: 'var(--radius)',
                 borderLeft: '3px solid var(--primary)',
                 fontFamily: 'var(--font-body)',

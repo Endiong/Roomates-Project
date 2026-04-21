@@ -35,23 +35,24 @@ export default function Navbar() {
     <>
       <header style={{
         position: 'sticky',
-        top: 0,
+        top: '1rem',
         zIndex: 100,
-        width: '100%',
+        width: 'calc(100% - 2rem)',
+        maxWidth: '80rem',
+        margin: '1rem auto 1.5rem',
+        borderRadius: '1.5rem',
         transition: 'all 0.3s ease',
         background: scrolled
-          ? 'rgba(248, 246, 195, 0.88)'
-          : 'rgba(255, 251, 255, 0.7)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+          ? 'rgba(255, 255, 255, 0.4)'
+          : 'rgba(255, 255, 255, 0.2)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
         boxShadow: scrolled
-          ? '0 4px 24px -4px rgba(57,57,27,0.12)'
-          : '0 1px 0 rgba(189,187,146,0.2)',
-        borderBottom: '1px solid rgba(189,187,146,0.2)',
+          ? 'inset 0 0 0 2px rgba(255,255,255,0.7), inset 0 0 20px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.1)'
+          : 'inset 0 0 0 2px rgba(255,255,255,0.5), inset 0 0 10px rgba(255,255,255,0.2), 0 4px 16px rgba(0,0,0,0.05)',
+        border: '1px solid rgba(255,255,255,0.6)',
       }}>
         <div style={{
-          maxWidth: '80rem',
-          margin: '0 auto',
           padding: '0 1.5rem',
           display: 'flex',
           alignItems: 'center',
@@ -62,12 +63,12 @@ export default function Navbar() {
           {/* Brand */}
           <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
             <span style={{
-              fontFamily: "'Dancing Script', cursive",
+              fontFamily: "'Plus Jakarta Sans', sans-serif",
               fontSize: '1.6rem',
-              fontWeight: 700,
+              fontWeight: 900,
               color: 'var(--primary)',
               lineHeight: 1,
-              letterSpacing: '-0.01em',
+              letterSpacing: '-0.05em',
             }}>
               Clockk It!
             </span>

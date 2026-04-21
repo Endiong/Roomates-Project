@@ -38,7 +38,7 @@ const Reveal = ({ children, delay = 0, direction = 'up', className, style }) => 
 const TICKER_ITEMS = [
   'Clockk It! ✦',
   'Six Girlies ✦',
-  'One Home ✦',
+  'One Room ✦',
   'Endless Memories ✦',
   'Room 3 Energy ✦',
   'The Chaos & The Love ✦',
@@ -112,7 +112,7 @@ function WashiDivider() {
   return (
     <div style={{
       height: '8px',
-      background: 'linear-gradient(90deg, rgba(185,238,219,0.6) 0%, rgba(254,203,203,0.7) 30%, rgba(250,211,253,0.65) 60%, rgba(248,246,195,0.85) 80%, rgba(185,238,219,0.5) 100%)',
+      background: 'linear-gradient(90deg, rgba(185,238,219,0.6) 0%, rgba(226,209,188,0.7) 30%, rgba(250,211,253,0.65) 60%, rgba(248,246,195,0.85) 80%, rgba(185,238,219,0.5) 100%)',
       margin: '0',
     }} />
   );
@@ -141,7 +141,7 @@ function MemoryCard({ mem, i }) {
           transform: 'translateX(-50%) rotate(-3deg)',
           width: '3.25rem',
           height: '0.85rem',
-          background: ['rgba(185,238,219,0.75)', 'rgba(250,211,253,0.7)', 'rgba(254,203,203,0.7)', 'rgba(248,246,195,0.85)', 'rgba(185,238,219,0.6)', 'rgba(250,211,253,0.65)'][i % 6],
+          background: ['rgba(185,238,219,0.75)', 'rgba(250,211,253,0.7)', 'rgba(226,209,188,0.7)', 'rgba(248,246,195,0.85)', 'rgba(185,238,219,0.6)', 'rgba(250,211,253,0.65)'][i % 6],
           backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.15) 5px, rgba(255,255,255,0.15) 10px)',
           zIndex: 10,
         }} />
@@ -185,7 +185,7 @@ export default function Landing() {
         <motion.div style={{ y: heroY, opacity: heroOpacity, position: 'absolute', inset: 0, pointerEvents: 'none' }}>
           <div style={{ position: 'absolute', top: '5%', left: '-8%', width: '35vw', height: '35vw', borderRadius: '50%', background: 'rgba(185,238,219,0.2)', filter: 'blur(60px)' }} />
           <div style={{ position: 'absolute', bottom: '15%', right: '-5%', width: '28vw', height: '28vw', borderRadius: '50%', background: 'rgba(250,211,253,0.18)', filter: 'blur(70px)' }} />
-          <div style={{ position: 'absolute', top: '40%', right: '20%', width: '18vw', height: '18vw', borderRadius: '50%', background: 'rgba(254,203,203,0.16)', filter: 'blur(50px)' }} />
+          <div style={{ position: 'absolute', top: '40%', right: '20%', width: '18vw', height: '18vw', borderRadius: '50%', background: 'rgba(226,209,188,0.16)', filter: 'blur(50px)' }} />
         </motion.div>
 
         {/* Floating polaroids */}
@@ -253,7 +253,7 @@ export default function Landing() {
               transform: 'rotate(-0.75deg)',
             }}
           >
-            Six people. One chaotic, beautiful home.
+            Six people. One chaotic, beautiful room.
           </motion.p>
 
           <motion.p
@@ -297,7 +297,7 @@ export default function Landing() {
               onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 8px 24px rgba(129,90,91,0.3)'; }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>group</span>
-              Meet the Girlies
+              View All Profiles
             </Link>
             <Link to="/memories" style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
@@ -408,10 +408,10 @@ export default function Landing() {
               <div style={{ position: 'relative' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: 'var(--primary)', fontVariationSettings: "'FILL' 1", marginBottom: '0.5rem', display: 'block' }}>home_heart</span>
                 <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 900, fontSize: '1.3rem', color: 'var(--primary)', marginBottom: '0.35rem' }}>
-                  One Home. Six Lives.
+                  One Room. Six Lives.
                 </h3>
                 <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', color: 'var(--on-surface-variant)', lineHeight: 1.6 }}>
-                  Shared kitchens, shared stories, shared chaos. Welcome to the place we call home.
+                  Shared space, shared stories, shared chaos. Welcome to the place we call home.
                 </p>
               </div>
             </div>
@@ -423,7 +423,7 @@ export default function Landing() {
               <span className="material-symbols-outlined" style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.8)', fontVariationSettings: "'FILL' 1" }}>photo_library</span>
               <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '1.1rem', color: 'white', lineHeight: 1.2 }}>Shared Memories</h3>
               <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.5 }}>
-                Every pizza run, every late-night laugh, every sunrise we watched together.
+                Fries on Valentine's Day, every late-night laugh, and the times we played Hidden Santa.
               </p>
               <Link to="/memories" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.8rem', color: 'white', textDecoration: 'none', marginTop: 'auto' }}>
                 Open the Album <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>arrow_forward</span>
@@ -468,7 +468,7 @@ export default function Landing() {
       <section style={{ padding: '5rem 1.5rem', background: 'var(--surface-container-low)', backgroundImage: 'radial-gradient(rgba(189,187,146,0.3) 0.5px, transparent 0.5px)', backgroundSize: '20px 20px' }}>
         <div style={{ maxWidth: '72rem', margin: '0 auto' }}>
           <Reveal direction="up">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '2.5rem', gap: '1rem' }}>
               <div>
                 <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--on-surface-variant)', opacity: 0.6, marginBottom: '0.35rem' }}>The People</p>
                 <h2 style={{ fontFamily: 'var(--font-headline)', fontWeight: 900, fontSize: 'clamp(1.5rem, 3.5vw, 2.25rem)', letterSpacing: '-0.04em', color: 'var(--primary)', lineHeight: 1 }}>
@@ -658,17 +658,17 @@ export default function Landing() {
               Clockk It!
             </p>
             <h2 style={{ fontFamily: 'var(--font-headline)', fontWeight: 900, fontSize: 'clamp(1.5rem, 3vw, 2rem)', letterSpacing: '-0.04em', color: 'var(--primary)', marginBottom: '0.75rem', lineHeight: 1.1 }}>
-              You are here. We are here. <br />This is home.
+              You are here. We are here. <br />This is Room 3.
             </h2>
             <p style={{ fontFamily: 'var(--font-handwritten)', fontSize: '1.15rem', color: 'var(--on-surface-variant)', marginBottom: '1.5rem', transform: 'rotate(-0.5deg)' }}>
-              — The Clockk It! Girlies 🏡
+              — The Clockk It! Girlies
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <Link to="/roommates" style={{ padding: '0.65rem 1.5rem', background: 'var(--primary)', color: 'white', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.875rem', textDecoration: 'none' }}>
                 Meet the Girlies
               </Link>
               <Link to="/games" style={{ padding: '0.65rem 1.5rem', background: 'rgba(255,255,255,0.6)', color: 'var(--on-surface)', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 600, fontSize: '0.875rem', textDecoration: 'none', border: '1.5px solid rgba(189,187,146,0.4)' }}>
-                🎮 Games
+                Games
               </Link>
             </div>
           </div>

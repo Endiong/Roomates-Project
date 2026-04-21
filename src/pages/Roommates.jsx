@@ -7,7 +7,7 @@ const ROTATIONS = [-1.5, 2, -2, 1, -1, 2.5];
 const WASHI_STYLES = [
   { top: '-0.6rem', left: '50%', transform: 'translateX(-50%) rotate(-2deg)', bg: 'rgba(185,238,219,0.75)' },
   { top: '-0.5rem', right: '0.75rem', transform: 'rotate(8deg)', bg: 'rgba(250,211,253,0.7)' },
-  { top: '-0.5rem', left: '1rem', transform: 'rotate(-10deg)', bg: 'rgba(254,203,203,0.65)' },
+  { top: '-0.5rem', left: '1rem', transform: 'rotate(-10deg)', bg: 'rgba(226,209,188,0.65)' },
   { top: '-0.6rem', left: '35%', transform: 'rotate(5deg)', bg: 'rgba(185,238,219,0.65)' },
   { top: '-0.5rem', left: '2rem', transform: 'rotate(-14deg)', bg: 'rgba(250,211,253,0.65)' },
   { top: '-0.5rem', right: '1.5rem', transform: 'rotate(11deg)', bg: 'rgba(248,246,195,0.85)' },
@@ -47,7 +47,7 @@ export default function Roommates() {
         {/* Washi accent */}
         <div style={{
           height: '6px',
-          background: 'linear-gradient(90deg, rgba(185,238,219,0.7) 0%, rgba(254,203,203,0.7) 25%, rgba(250,211,253,0.7) 50%, rgba(248,246,195,0.9) 75%, rgba(185,238,219,0.5) 100%)',
+          background: 'linear-gradient(90deg, rgba(185,238,219,0.7) 0%, rgba(226,209,188,0.7) 25%, rgba(250,211,253,0.7) 50%, rgba(248,246,195,0.9) 75%, rgba(185,238,219,0.5) 100%)',
           borderRadius: '3px',
           maxWidth: '8rem',
           margin: '0 auto 1.25rem',
@@ -102,7 +102,7 @@ export default function Roommates() {
           margin: '0 auto',
           padding: '0 2rem 5rem',
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: '3.5rem 2.5rem',
           alignItems: 'start',
         }}
