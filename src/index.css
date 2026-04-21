@@ -1,0 +1,437 @@
+/* ═══════════════════════════════════════════════
+   CLOCKK IT! — Global Design System
+   Material Design Color Tokens + Scrapbook Styles
+   ═══════════════════════════════════════════════ */
+
+/* Material Design Color Tokens */
+:root {
+  --primary: #815a5b;
+  --primary-dim: #744e4f;
+  --primary-fixed: #fecbcb;
+  --primary-fixed-dim: #efbdbd;
+  --primary-container: #fecbcb;
+  --on-primary: #ffffff;
+  --on-primary-container: #654142;
+  --on-primary-fixed: #502f30;
+  --on-primary-fixed-variant: #704b4b;
+
+  --secondary: #3c6d5e;
+  --secondary-dim: #2f6152;
+  --secondary-fixed: #b9eedb;
+  --secondary-fixed-dim: #abdfcd;
+  --secondary-container: #b9eedb;
+  --on-secondary: #ffffff;
+  --on-secondary-container: #285a4c;
+  --on-secondary-fixed: #12473a;
+  --on-secondary-fixed-variant: #336456;
+
+  --tertiary: #785a7e;
+  --tertiary-dim: #6c4e71;
+  --tertiary-fixed: #fad3fd;
+  --tertiary-fixed-dim: #ebc5ef;
+  --tertiary-container: #fad3fd;
+  --on-tertiary: #ffffff;
+  --on-tertiary-container: #634668;
+  --on-tertiary-fixed: #4f3455;
+  --on-tertiary-fixed-variant: #6d4f72;
+
+  --error: #be2d06;
+  --error-dim: #b92902;
+  --error-container: #f95630;
+  --on-error: #ffffff;
+  --on-error-container: #520c00;
+
+  --background: #fdf8f0;
+  --on-background: #39391b;
+  --surface: #fdf8f0;
+  --surface-bright: #ffffff;
+  --surface-dim: #ede8df;
+  --surface-variant: #ede8df;
+  --surface-tint: #815a5b;
+  --on-surface: #39391b;
+  --on-surface-variant: #666643;
+
+  --surface-container-lowest: #ffffff;
+  --surface-container-low:  #f8f7f3;
+  --surface-container:      #f2f0ea;
+  --surface-container-high: #eceae3;
+  --surface-container-highest: #e5e3db;
+
+  --outline: #83835d;
+  --outline-variant: #bdbb92;
+  --inverse-surface: #0f0f00;
+  --inverse-on-surface: #a09f78;
+  --inverse-primary: #fecbcb;
+
+  /* Typography */
+  --font-headline: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Be Vietnam Pro', sans-serif;
+  --font-label: 'Be Vietnam Pro', sans-serif;
+  --font-handwritten: 'Gochi Hand', cursive;
+  --font-caveat: 'Caveat', cursive;
+  --font-dancing: 'Dancing Script', cursive;
+  --font-shadows: 'Shadows Into Light', cursive;
+
+  /* Border Radius */
+  --radius: 1rem;
+  --radius-lg: 2rem;
+  --radius-xl: 3rem;
+  --radius-full: 9999px;
+}
+
+/* ═══════ RESET & BASE ═══════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  color: var(--on-surface);
+  background-color: var(--background);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; }
+
+img { display: block; max-width: 100%; }
+
+/* ═══════ SCRAPBOOK BACKGROUND PATTERNS ═══════ */
+.scrapbook-dots {
+  background-image: radial-gradient(#fecbcb 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-color: #fdf8f0;
+}
+
+.scrapbook-dots-pink {
+  background-image: radial-gradient(#fecbcb 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+  background-color: #fdf8f0;
+}
+
+.dotted-primary {
+  background-image: radial-gradient(#815a5b 0.5px, transparent 0.5px);
+  background-size: 20px 20px;
+  background-color: #fde8e8;
+}
+
+/* ═══════ PAPER-CUT / TORN SHAPES ═══════ */
+/* Torn bottom edge on a section  */
+.paper-tear-bottom {
+  position: relative;
+}
+.paper-tear-bottom::after {
+  content: '';
+  display: block;
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 2rem;
+  background: inherit;
+  clip-path: polygon(0% 0%, 3% 100%, 6% 20%, 9% 90%, 12% 10%, 15% 80%, 18% 5%, 21% 95%, 24% 15%, 27% 85%, 30% 0%, 33% 100%, 36% 20%, 39% 90%, 42% 5%, 45% 85%, 48% 15%, 51% 95%, 54% 0%, 57% 100%, 60% 20%, 63% 85%, 66% 10%, 69% 90%, 72% 5%, 75% 80%, 78% 15%, 81% 95%, 84% 0%, 87% 100%, 90% 20%, 93% 90%, 96% 10%, 100% 0%);
+}
+
+/* Decorative cut-paper card flourish */
+.cut-paper {
+  position: relative;
+  clip-path: polygon(
+    0% 0%, 100% 0%, 100% calc(100% - 12px),
+    calc(100% - 12px) 100%, 0% 100%
+  );
+}
+
+/* Zig-zag bottom stamp effect */
+.stamp-edge {
+  position: relative;
+}
+.stamp-edge::after {
+  content: '';
+  display: block;
+  height: 14px;
+  background: radial-gradient(circle at 7px -4px, #fdf8f0 7px, transparent 7px), radial-gradient(circle at 7px -4px, rgba(0,0,0,0.04) 8px, transparent 8px);
+  background-size: 14px 14px;
+  background-position: left bottom;
+  margin-top: -1px;
+}
+
+/* ═══════ POLAROID STYLES ═══════ */
+.polaroid {
+  background-color: var(--surface-container-lowest);
+  padding: 1rem 1rem 3rem;
+  box-shadow: 0 10px 30px -5px rgba(57, 57, 27, 0.12);
+}
+
+.polaroid-tilt-1 { transform: rotate(-1.5deg); }
+.polaroid-tilt-2 { transform: rotate(2deg); }
+.polaroid-tilt-3 { transform: rotate(-1deg); }
+.polaroid-tilt-4 { transform: rotate(3deg); }
+.polaroid-tilt-5 { transform: rotate(-2deg); }
+.polaroid-tilt-6 { transform: rotate(-3deg); }
+
+.polaroid:hover,
+.polaroid-hover:hover {
+  transform: rotate(0deg) translateY(-4px);
+  transition: transform 0.5s ease;
+  z-index: 10;
+}
+
+/* ═══════ WASHI TAPE ═══════ */
+.washi-tape {
+  background-color: rgba(185, 238, 219, 0.7);
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+}
+
+.washi-tape-pink {
+  background-color: rgba(254, 203, 203, 0.7);
+}
+
+.washi-tape-lavender {
+  background-color: rgba(235, 197, 239, 0.7);
+}
+
+.washi-tape-yellow {
+  background-color: rgba(248, 246, 195, 0.8);
+}
+
+/* ═══════ TORN EDGE ═══════ */
+.torn-edge {
+  clip-path: polygon(0% 0%, 5% 2%, 10% 0%, 15% 3%, 20% 0%, 25% 2%, 30% 0%, 35% 3%, 40% 0%, 45% 2%, 50% 0%, 55% 3%, 60% 0%, 65% 2%, 70% 0%, 75% 3%, 80% 0%, 85% 2%, 90% 0%, 95% 3%, 100% 0%, 100% 100%, 95% 98%, 90% 100%, 85% 97%, 80% 100%, 75% 98%, 70% 100%, 65% 97%, 60% 100%, 55% 98%, 50% 100%, 45% 97%, 40% 100%, 35% 98%, 30% 100%, 25% 97%, 20% 100%, 15% 98%, 10% 100%, 5% 97%, 0% 100%);
+}
+
+.torn-paper {
+  clip-path: polygon(0% 2%, 5% 0%, 10% 3%, 15% 1%, 20% 4%, 25% 1%, 30% 3%, 35% 0%, 40% 2%, 45% 1%, 50% 3%, 55% 1%, 60% 4%, 65% 1%, 70% 3%, 75% 0%, 80% 2%, 85% 1%, 90% 3%, 95% 0%, 100% 2%, 100% 98%, 95% 100%, 90% 97%, 85% 99%, 80% 96%, 75% 100%, 70% 97%, 65% 99%, 60% 96%, 55% 100%, 50% 97%, 45% 99%, 40% 96%, 35% 100%, 30% 97%, 25% 99%, 20% 96%, 15% 100%, 10% 97%, 5% 99%, 0% 98%);
+}
+
+/* ═══════ MATERIAL SYMBOLS ═══════ */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.material-symbols-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ═══════ TYPOGRAPHY UTILITIES ═══════ */
+.font-headline { font-family: var(--font-headline); }
+.font-body { font-family: var(--font-body); }
+.font-handwritten { font-family: var(--font-handwritten); }
+.font-caveat { font-family: var(--font-caveat); }
+.font-dancing { font-family: var(--font-dancing); }
+.font-shadows { font-family: var(--font-shadows); }
+
+/* ═══════ COMMON BADGE/TAG STYLES ═══════ */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-label);
+}
+
+.badge-mbti {
+  background-color: var(--secondary-container);
+  color: var(--on-secondary-container);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-trait {
+  background-color: var(--surface-container-high);
+  color: var(--on-surface-variant);
+  font-style: italic;
+}
+
+/* ═══════ NAVBAR ═══════ */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: rgba(250, 249, 245, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: 0 4px 20px -4px rgba(57, 57, 27, 0.1);
+}
+
+.navbar-brand {
+  font-family: var(--font-headline);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.navbar-nav {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  list-style: none;
+}
+
+.navbar-nav a {
+  font-family: var(--font-headline);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: rgba(129, 90, 91, 0.5);
+  transition: color 0.3s;
+  text-decoration: none;
+}
+
+.navbar-nav a:hover,
+.navbar-nav a.active {
+  color: var(--primary);
+}
+
+.navbar-nav a.active {
+  border-bottom: 2px solid var(--primary);
+  padding-bottom: 2px;
+}
+
+.navbar-icon {
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 1.5rem;
+  transition: transform 0.2s;
+}
+
+.navbar-icon:hover { transform: scale(1.1); }
+
+/* ═══════ FOOTER ═══════ */
+.footer {
+  width: 100%;
+  padding: 3rem 2rem;
+  background: transparent;
+  border-top: 1px solid rgba(189, 187, 146, 0.3);
+  margin-top: 2rem;
+}
+
+.footer-inner {
+  max-width: 80rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+.footer-brand {
+  font-family: var(--font-headline);
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--primary);
+}
+
+.footer-copy {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--on-surface-variant);
+  opacity: 0.7;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footer-links a {
+  font-size: 0.85rem;
+  color: var(--on-surface-variant);
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.footer-links a:hover { opacity: 1; color: var(--primary); }
+
+@media (min-width: 768px) {
+  .footer-inner {
+    flex-direction: row;
+    justify-content: space-between;
+    text-align: left;
+  }
+}
+
+/* ═══════ MOBILE MENU ═══════ */
+.hamburger { display: none; cursor: pointer; }
+
+@media (max-width: 768px) {
+  .hamburger { display: block; }
+  .navbar-nav { display: none; }
+  .navbar-nav.open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(250, 249, 245, 0.99);
+    padding: 1.5rem 2rem;
+    gap: 1rem;
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+}
+
+/* ═══════ PAGE WRAPPER ═══════ */
+.page-container {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 5rem 1.5rem 5rem;
+}
+
+/* ═══════ TRANSITIONS ═══════ */
+.page-enter { opacity: 0; transform: translateY(16px); }
+.page-enter-active { opacity: 1; transform: translateY(0); transition: opacity 0.4s ease, transform 0.4s ease; }
+.page-exit { opacity: 1; }
+.page-exit-active { opacity: 0; transition: opacity 0.3s ease; }
+
+/* ═══════ FAB ═══════ */
+.fab {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 3.5rem;
+  height: 3.5rem;
+  background: var(--primary);
+  color: var(--on-primary);
+  border: none;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(129, 90, 91, 0.4);
+  transition: transform 0.2s, background 0.2s;
+  z-index: 40;
+}
+
+.fab:hover { background: var(--primary-dim); transform: scale(1.05); }
+.fab:active { transform: scale(0.95); }
+
+/* ═══════ GRAYSCALE HOVER ═══════ */
+.grayscale-hover {
+  filter: grayscale(100%) brightness(0.95);
+  transition: filter 0.7s ease;
+}
+
+.grayscale-hover:hover,
+.group:hover .grayscale-hover {
+  filter: grayscale(0%) brightness(1);
+}
+
+/* ═══════ SELECTION COLOR ═══════ */
+::selection {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+}

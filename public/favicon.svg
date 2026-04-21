@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <rect width="48" height="48" rx="10" fill="#fffbff"/>
+  <rect width="48" height="48" rx="10" fill="#fecbcb" opacity="0.4"/>
+  <!-- photo_album icon approximation using basic shapes -->
+  <rect x="10" y="8" width="22" height="28" rx="2" fill="#815a5b" opacity="0.15"/>
+  <rect x="12" y="10" width="22" height="28" rx="2" fill="#ffffff" stroke="#815a5b" stroke-width="1.5"/>
+  <!-- Photo frame on album -->
+  <rect x="15" y="14" width="16" height="12" rx="1" fill="#fecbcb"/>
+  <circle cx="18" cy="18" r="2.5" fill="#815a5b" opacity="0.5"/>
+  <path d="M15 26 l4-5 l3 4 l2.5-3 l3.5 4z" fill="#815a5b" opacity="0.6"/>
+  <!-- Lines below photo -->
+  <rect x="15" y="29" width="16" height="2" rx="1" fill="#815a5b" opacity="0.3"/>
+  <rect x="15" y="33" width="10" height="2" rx="1" fill="#815a5b" opacity="0.2"/>
+  <!-- Decorative corner tab -->
+  <path d="M30 8 L34 8 L34 12 Z" fill="#815a5b" opacity="0.5"/>
+</svg>
