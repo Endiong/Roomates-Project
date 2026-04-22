@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { timeline, groupStats } from '../data/roommates';
 import { useAuth } from '../context/AuthContext';
-import { addMemory, getMemories, deleteMemory } from '../firebase/db';
+import { addMemory, getMemories, deleteMemory, getMoods, setMood, deleteMood } from '../firebase/db';
 import { uploadPhoto } from '../firebase/storage';
 import { Link } from 'react-router-dom';
 
@@ -354,10 +354,14 @@ function getAuthorColor(nickname) {
 }
 
 // ── Memory Wall Card ──────────────────────────────────────────────
-function MemoryWallCard({ mem, i, isAdminUser, currentUserNickname, onDelete }) {
+function MemoryWallCard({ mem, i, isAdminUser, currentUserNickname, onDelete, onExpand }) {
   const tpl = TEXT_TEMPLATES.find(t => t.id === mem.template) || TEXT_TEMPLATES[0];
   const rotation = mem.rotation ?? (i % 2 === 0 ? -2 : 2);
   const authorColor = getAuthorColor(mem.authorNickname || mem.author);
+
+  const idSum = mem.id.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  const scatterX = (idSum % 60) - 30;
+  const scatterY = ((idSum * 3) % 40) - 20;
 
   // Delete for true authors only (or admins via dash)
   const isAuthor = currentUserNickname === mem.authorNickname;
@@ -371,12 +375,15 @@ function MemoryWallCard({ mem, i, isAdminUser, currentUserNickname, onDelete }) 
   if (mem.type === 'text') {
     return (
       <motion.div
+        onClick={() => onExpand(mem)}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: i * 0.04 }}
-        whileHover={{ rotate: 0, scale: 1.04, zIndex: 10 }}
+        whileHover={{ scale: 1.05, rotate: 0, zIndex: 20 }}
         style={{
-          transform: `rotate(${rotation}deg)`,
+          transform: `rotate(${rotation}deg) translate(${scatterX}px, ${scatterY}px)`,
+          width: '210px',
+          cursor: 'pointer',
           background: tpl.bg,
           borderRadius: tpl.clipPath ? 0 : '0.5rem',
           clipPath: tpl.clipPath,
@@ -412,7 +419,7 @@ function MemoryWallCard({ mem, i, isAdminUser, currentUserNickname, onDelete }) 
             </div>
           </div>
           {canDelete && (
-            <button onClick={() => onDelete(mem.id)} title="Delete" style={{ background: 'rgba(190,45,6,0.1)', border: 'none', borderRadius: '0.35rem', cursor: 'pointer', padding: '0.15rem 0.3rem', display: 'flex', flexShrink: 0 }}>
+            <button onClick={(e) => { e.stopPropagation(); onDelete(mem.id); }} title="Delete" style={{ background: 'rgba(190,45,6,0.1)', border: 'none', borderRadius: '0.35rem', cursor: 'pointer', padding: '0.15rem 0.3rem', display: 'flex', flexShrink: 0 }}>
               <span className="material-symbols-outlined" style={{ fontSize: '0.8rem', color: '#be2d06' }}>delete</span>
             </button>
           )}
@@ -433,12 +440,15 @@ function MemoryWallCard({ mem, i, isAdminUser, currentUserNickname, onDelete }) 
   const frameStyle = PHOTO_FRAMES.find(f => f.id === mem.frame) || PHOTO_FRAMES[0];
   return (
     <motion.div
+      onClick={() => onExpand(mem)}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: i * 0.04 }}
-      whileHover={{ rotate: 0, scale: 1.04, zIndex: 10 }}
+      whileHover={{ scale: 1.05, rotate: 0, zIndex: 20 }}
       style={{
-        transform: `rotate(${rotation}deg)`,
+        transform: `rotate(${rotation}deg) translate(${scatterX}px, ${scatterY}px)`,
+        width: '180px',
+        cursor: 'pointer',
         background: frameStyle.bg,
         padding: frameStyle.padding,
         borderRadius: mem.frame === 'round' ? '50%' : '2px',
@@ -482,7 +492,7 @@ function MemoryWallCard({ mem, i, isAdminUser, currentUserNickname, onDelete }) 
           )}
         </div>
         {canDelete && (
-          <button onClick={() => onDelete(mem.id)} title="Delete" style={{ background: 'rgba(190,45,6,0.15)', border: 'none', borderRadius: '0.35rem', cursor: 'pointer', padding: '0.15rem 0.3rem', display: 'flex', flexShrink: 0 }}>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(mem.id); }} title="Delete" style={{ background: 'rgba(190,45,6,0.15)', border: 'none', borderRadius: '0.35rem', cursor: 'pointer', padding: '0.15rem 0.3rem', display: 'flex', flexShrink: 0 }}>
             <span className="material-symbols-outlined" style={{ fontSize: '0.8rem', color: '#be2d06' }}>delete</span>
           </button>
         )}
@@ -515,19 +525,71 @@ export default function Memories() {
   const [modalKey, setModalKey] = useState(0);
   const [memories, setMemories] = useState([]);
   const [loadingMems, setLoadingMems] = useState(true);
+  const [expandedMem, setExpandedMem] = useState(null);
+
+  // ── Mood state ──
+  const [moods, setMoods] = useState([]);
+  const [showMoodInput, setShowMoodInput] = useState(false);
+  const [moodEmoji, setMoodEmoji] = useState('✨');
+  const [moodText, setMoodText] = useState('');
+  const [savingMood, setSavingMood] = useState(false);
+  const MOOD_MAX = 72;
+  const MOOD_MIN = 6;
+  const EMOJI_OPTIONS = ['✨', '🍕', '😴', '💀', '🎉', '😭', '🧼', '💃', '📚', '🍞', '🤩', '😤'];
+
+  async function fetchMoods() {
+    try {
+      const m = await getMoods();
+      setMoods(m);
+    } catch (e) {
+      console.error('Failed to load moods:', e);
+    }
+  }
+
+  async function handleSaveMood() {
+    if (!currentUser || !moodText.trim() || moodText.trim().length < MOOD_MIN) return;
+    setSavingMood(true);
+    try {
+      await setMood(currentUser.nickname, {
+        emoji: moodEmoji,
+        text: moodText.trim(),
+        displayName: currentUser.displayNickname || currentUser.nickname,
+      });
+      await fetchMoods();
+      setShowMoodInput(false);
+      setMoodText('');
+    } catch (e) {
+      console.error('Failed to save mood:', e);
+    }
+    setSavingMood(false);
+  }
+
+  async function handleClearMood() {
+    if (!currentUser) return;
+    try {
+      await deleteMood(currentUser.nickname);
+      await fetchMoods();
+    } catch (e) {
+      console.error('Failed to clear mood:', e);
+    }
+  }
 
   async function fetchMemories() {
     setLoadingMems(true);
     try {
       const mems = await getMemories();
-      setMemories(isAdmin() ? mems : mems.filter(m => m.visible !== false));
+      const adminMode = currentUser?.role === 'admin';
+      setMemories(adminMode ? mems : mems.filter(m => m.visible !== false));
     } catch (e) {
       console.error('Failed to load memories:', e);
     }
     setLoadingMems(false);
   }
 
-  useEffect(() => { fetchMemories(); }, []);
+  useEffect(() => {
+    fetchMemories();
+    fetchMoods();
+  }, [currentUser?.role]);
 
   async function handleDelete(id) {
     if (!confirm('Delete this memory permanently?')) return;
@@ -536,55 +598,351 @@ export default function Memories() {
   }
 
   return (
-    <div style={{ background: '#faf9f5' }} className="scrapbook-dots">
+    <div style={{ background: '#fdf8f0' }} className="scrapbook-dots">
 
-      {/* ── HERO ── */}
-      <section style={{ textAlign: 'center', padding: '5rem 1.5rem 3rem', position: 'relative', overflow: 'hidden' }}>
+      {/* ── HERO — Reference-style: torn paper left + upload button right ── */}
+      <section style={{ maxWidth: '80rem', margin: '0 auto', padding: '3rem 1.5rem 1.5rem', position: 'relative' }}>
         {/* Decorative floating stickers */}
-        <div style={{ position: 'absolute', top: '2rem', left: '3%', opacity: 0.12, transform: 'rotate(15deg)', color: 'var(--tertiary)', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: '1rem', left: '1%', opacity: 0.08, transform: 'rotate(15deg)', color: 'var(--tertiary)', pointerEvents: 'none' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '6rem', fontVariationSettings: "'FILL' 1" }}>favorite</span>
         </div>
-        <div style={{ position: 'absolute', top: '1.5rem', right: '5%', opacity: 0.1, transform: 'rotate(-12deg)', color: 'var(--primary)', pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: '0.5rem', right: '3%', opacity: 0.07, transform: 'rotate(-12deg)', color: 'var(--primary)', pointerEvents: 'none' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '5rem', fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
         </div>
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-          {/* Torn paper heading */}
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: '1.5rem',
+          }}
+        >
+          {/* Torn-paper heading card (matching reference exactly) */}
           <div style={{
+            position: 'relative',
             display: 'inline-block',
             background: 'var(--surface-container-high)',
-            padding: '1.25rem 2.5rem 1.5rem',
-            clipPath: "polygon(0% 2%, 4% 0%, 8% 2%, 14% 0%, 19% 2%, 25% 0%, 31% 2%, 37% 0%, 43% 2%, 49% 0%, 55% 2%, 61% 0%, 67% 2%, 73% 0%, 79% 2%, 85% 0%, 91% 2%, 96% 0%, 100% 2%, 100% 98%, 96% 100%, 91% 97%, 85% 100%, 79% 97%, 73% 100%, 67% 97%, 61% 100%, 55% 97%, 49% 100%, 43% 97%, 37% 100%, 31% 97%, 25% 100%, 19% 97%, 14% 100%, 8% 97%, 4% 100%, 0% 97%)",
-            transform: 'rotate(-0.8deg)',
-            marginBottom: '1.5rem',
-            position: 'relative',
+            padding: '1.5rem 2.5rem 1.75rem',
+            clipPath: "polygon(0% 0%, 5% 2%, 10% 0%, 15% 3%, 20% 0%, 25% 2%, 30% 0%, 35% 3%, 40% 0%, 45% 2%, 50% 0%, 55% 3%, 60% 0%, 65% 2%, 70% 0%, 75% 3%, 80% 0%, 85% 2%, 90% 0%, 95% 3%, 100% 0%, 100% 100%, 95% 97%, 90% 100%, 85% 98%, 80% 100%, 75% 97%, 70% 100%, 65% 98%, 60% 100%, 55% 97%, 50% 100%, 45% 98%, 40% 100%, 35% 97%, 30% 100%, 25% 98%, 20% 100%, 15% 97%, 10% 100%, 5% 98%, 0% 100%)",
+            transform: 'rotate(-1deg)',
+            boxShadow: '0 6px 20px rgba(57,57,27,0.1)',
           }}>
-            {/* Washi tape on torn paper card */}
-            <div style={{ position: 'absolute', top: '-0.6rem', left: '50%', transform: 'translateX(-50%) rotate(2deg)', width: '5rem', height: '1.25rem', background: 'rgba(250,211,253,0.7)', backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.2) 8px, rgba(255,255,255,0.2) 16px)' }} />
-            <h1 style={{ fontFamily: 'var(--font-headline)', fontSize: 'clamp(2rem, 7vw, 4.5rem)', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.03em', margin: 0 }}>
-              The Core Memories.
+            {/* Washi tape strip on top */}
+            <div style={{
+              position: 'absolute',
+              top: '-0.7rem',
+              left: '50%',
+              transform: 'translateX(-50%) rotate(12deg)',
+              width: '6rem',
+              height: '1.4rem',
+              background: 'rgba(250,211,253,0.75)',
+              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.25) 8px, rgba(255,255,255,0.25) 16px)',
+              zIndex: -1,
+            }} />
+            <h1 style={{
+              fontFamily: 'var(--font-headline)',
+              fontSize: 'clamp(1.6rem, 4vw, 3rem)',
+              fontWeight: 800,
+              color: 'var(--on-surface)',
+              letterSpacing: '-0.02em',
+              margin: 0,
+              lineHeight: 1.15,
+            }}>
+              Shared Memories: The NDDC Story
             </h1>
+            <p style={{
+              fontFamily: 'var(--font-label)',
+              fontSize: '0.95rem',
+              fontStyle: 'italic',
+              fontWeight: 500,
+              color: 'var(--on-surface-variant)',
+              marginTop: '0.4rem',
+            }}>
+              Every messy moment, perfectly clocked.
+            </p>
           </div>
-          <p style={{ fontFamily: 'var(--font-body)', fontSize: '1.1rem', fontStyle: 'italic', color: 'var(--on-surface-variant)', maxWidth: '36rem', margin: '0 auto 1.75rem', lineHeight: 1.7 }}>
-            Capturing the chaos, the suya runs, and the shared survival of living together.
-          </p>
-          {currentUser ? (
+
+          {/* Upload button — hidden for admin */}
+          {currentUser && !isAdmin() ? (
             <button
               onClick={() => { setModalKey(k => k + 1); setShowModal(true); }}
-              style={{ marginTop: '0.5rem', background: 'var(--primary)', color: 'var(--on-primary)', padding: '1rem 2rem', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 700, border: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 24px rgba(129,90,91,0.3)', cursor: 'pointer', transition: 'transform 0.2s, box-shadow 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                background: 'var(--primary)',
+                color: 'var(--on-primary)',
+                padding: '1rem 2rem',
+                borderRadius: 'var(--radius-full)',
+                fontFamily: 'var(--font-headline)',
+                fontWeight: 700,
+                fontSize: '1rem',
+                border: 'none',
+                boxShadow: '0 8px 24px rgba(129,90,91,0.3)',
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+                flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(129,90,91,0.4)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(129,90,91,0.3)'; }}
             >
               <span className="material-symbols-outlined">add_a_photo</span>
-              Add a Memory
+              Upload a Group Memory
             </button>
           ) : (
-            <Link to="/login" style={{ marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.75rem', background: 'var(--surface-container)', border: '1.5px solid rgba(189,187,146,0.4)', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 600, fontSize: '0.9rem', color: 'var(--on-surface-variant)', textDecoration: 'none' }}>
+            <Link
+              to="/login"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '1rem 2rem',
+                background: 'var(--surface-container)',
+                border: '1.5px solid rgba(189,187,146,0.4)',
+                borderRadius: 'var(--radius-full)',
+                fontFamily: 'var(--font-headline)',
+                fontWeight: 700,
+                fontSize: '1rem',
+                color: 'var(--on-surface-variant)',
+                textDecoration: 'none',
+                flexShrink: 0,
+              }}
+            >
               <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>lock</span>
               Sign in to add memories
             </Link>
           )}
         </motion.div>
+
+        {/* ── MOOD UPDATES SECTION — Live from Firestore ── */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.25 }}
+          style={{ marginTop: '2.5rem' }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
+            <h2 style={{ fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '1.25rem', color: 'var(--primary-dim)', whiteSpace: 'nowrap' }}>Mood Updates</h2>
+            <div style={{ flexGrow: 1, height: '1px', background: 'var(--outline-variant)' }} />
+            {/* Add mood button for logged-in non-admin users */}
+            {currentUser && !isAdmin() && (
+              <button
+                onClick={() => setShowMoodInput(v => !v)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                  padding: '0.35rem 0.85rem', borderRadius: 'var(--radius-full)',
+                  background: showMoodInput ? 'var(--primary-container)' : 'transparent',
+                  border: '1.5px solid rgba(189,187,146,0.4)',
+                  fontFamily: 'var(--font-label)', fontWeight: 700, fontSize: '0.72rem',
+                  color: 'var(--primary)', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>{showMoodInput ? 'close' : 'mood'}</span>
+                {showMoodInput ? 'Cancel' : 'Update my mood'}
+              </button>
+            )}
+          </div>
+
+          {/* Mood input form */}
+          <AnimatePresence>
+            {showMoodInput && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+                style={{ overflow: 'hidden', marginBottom: '1rem' }}
+              >
+                <div style={{
+                  background: 'var(--surface-container-low)',
+                  borderRadius: '1rem',
+                  padding: '1rem',
+                  border: '1.5px solid rgba(189,187,146,0.35)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                }}>
+                  {/* Emoji picker */}
+                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                    {EMOJI_OPTIONS.map(e => (
+                      <button key={e} onClick={() => setMoodEmoji(e)} style={{
+                        fontSize: '1.25rem', padding: '0.2rem 0.4rem',
+                        borderRadius: '0.5rem', border: 'none', cursor: 'pointer',
+                        background: moodEmoji === e ? 'var(--primary-container)' : 'transparent',
+                        transform: moodEmoji === e ? 'scale(1.2)' : 'scale(1)',
+                        transition: 'all 0.15s',
+                      }}>{e}</button>
+                    ))}
+                  </div>
+                  {/* Text input */}
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      value={moodText}
+                      onChange={e => setMoodText(e.target.value.slice(0, MOOD_MAX))}
+                      placeholder={`How's the vibe? (${MOOD_MIN}–${MOOD_MAX} chars)`}
+                      style={{
+                        width: '100%', boxSizing: 'border-box',
+                        padding: '0.6rem 3rem 0.6rem 0.9rem',
+                        borderRadius: '0.65rem',
+                        border: `1.5px solid ${moodText.length < MOOD_MIN && moodText.length > 0 ? 'var(--error)' : 'rgba(189,187,146,0.4)'}`,
+                        background: 'var(--surface-container-lowest)',
+                        fontFamily: 'var(--font-label)', fontSize: '0.9rem',
+                        color: 'var(--on-surface)', outline: 'none',
+                      }}
+                    />
+                    <span style={{
+                      position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)',
+                      fontFamily: 'var(--font-label)', fontSize: '0.6rem', fontWeight: 700,
+                      color: moodText.length > MOOD_MAX * 0.85 ? 'var(--error)' : 'var(--outline)',
+                      opacity: 0.7,
+                    }}>{moodText.length}/{MOOD_MAX}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={handleSaveMood}
+                      disabled={savingMood || moodText.trim().length < MOOD_MIN}
+                      style={{
+                        flex: 1, padding: '0.55rem', borderRadius: 'var(--radius-full)',
+                        background: moodText.trim().length >= MOOD_MIN ? 'var(--primary)' : 'rgba(189,187,146,0.3)',
+                        color: moodText.trim().length >= MOOD_MIN ? 'white' : 'var(--outline)',
+                        border: 'none', fontFamily: 'var(--font-headline)', fontWeight: 700,
+                        fontSize: '0.85rem', cursor: moodText.trim().length >= MOOD_MIN ? 'pointer' : 'not-allowed',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {savingMood ? 'Saving...' : `${moodEmoji} Post Mood`}
+                    </button>
+                    {moods.find(m => m.nickname === currentUser?.nickname) && (
+                      <button
+                        onClick={handleClearMood}
+                        style={{
+                          padding: '0.55rem 1rem', borderRadius: 'var(--radius-full)',
+                          background: 'transparent', border: '1.5px solid rgba(190,45,6,0.25)',
+                          color: 'var(--error)', fontFamily: 'var(--font-headline)', fontWeight: 600,
+                          fontSize: '0.8rem', cursor: 'pointer',
+                        }}
+                      >
+                        Clear mine
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Live mood chips */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+            {moods.length === 0 ? (
+              <p style={{ fontFamily: 'var(--font-label)', fontStyle: 'italic', fontSize: '0.85rem', color: 'var(--outline)', opacity: 0.6 }}>
+                No moods yet — be the first to share yours!
+              </p>
+            ) : moods.map((mood, i) => {
+              const rotations = ['1deg', '-2deg', '1.5deg', '-1deg', '2deg', '-1.5deg'];
+              const bgs = ['var(--surface-container-low)', 'var(--secondary-container)', 'var(--tertiary-container)', 'var(--surface-container)', 'var(--primary-container)'];
+              const relativeDate = mood.updatedAt?.toDate
+                ? (() => {
+                    const diff = Date.now() - mood.updatedAt.toDate().getTime();
+                    if (diff < 60000) return 'just now';
+                    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+                    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+                    return mood.updatedAt.toDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                  })()
+                : '';
+              return (
+                <div key={mood.id} style={{
+                  background: bgs[i % bgs.length],
+                  padding: '0.65rem 1rem',
+                  borderRadius: '1rem',
+                  border: '1px solid rgba(189,187,146,0.15)',
+                  boxShadow: '0 2px 8px rgba(57,57,27,0.06)',
+                  transform: `rotate(${rotations[i % rotations.length]})`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.2rem',
+                  maxWidth: '220px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>{mood.emoji}</span>
+                    <span style={{ fontFamily: 'var(--font-label)', fontStyle: 'italic', fontSize: '0.875rem', color: 'var(--on-surface)', lineHeight: 1.3 }}>{mood.text}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', paddingLeft: '0.25rem' }}>
+                    <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--outline-variant)', flexShrink: 0 }} />
+                    <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.58rem', color: 'var(--outline)', textTransform: 'capitalize' }}>
+                      {mood.displayName || mood.nickname}
+                    </span>
+                    {relativeDate && (
+                      <span style={{ fontFamily: 'var(--font-label)', fontSize: '0.55rem', color: 'var(--outline)', opacity: 0.6 }}>
+                        · {relativeDate}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.section>
       </section>
+
+      {/* ── EXPANDED LIGHTBOX ── */}
+      <AnimatePresence>
+        {expandedMem && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setExpandedMem(null)}
+            style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', cursor: 'zoom-out' }}
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 30 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.85, opacity: 0, transition: { duration: 0.2 } }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={e => e.stopPropagation()}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', cursor: 'default' }}
+            >
+              {/* Force pseudo-wrapper to scale the inner card cleanly */}
+              <div style={{ transform: 'scale(1.4)', transformOrigin: 'center center', pointerEvents: 'none' }}>
+                <MemoryWallCard mem={{...expandedMem, rotation: 0}} i={0} isAdminUser={isAdmin()} currentUserNickname={currentUser?.nickname} onDelete={()=>{}} onExpand={()=>{}} />
+              </div>
+
+              {expandedMem.type === 'photo' && expandedMem.photoUrl && (
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(expandedMem.photoUrl);
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      const dateStr = expandedMem.takenAt || (expandedMem.createdAt?.toDate ? expandedMem.createdAt.toDate().toISOString().split('T')[0] : expandedMem.id);
+                      a.download = `memory-${dateStr}.jpg`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    } catch {
+                      window.open(expandedMem.photoUrl, '_blank');
+                    }
+                  }}
+                  style={{ marginTop: '3rem', padding: '0.8rem 2rem', background: '#fff', color: '#111', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '1rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', pointerEvents: 'auto', transition: 'transform 0.2s', border: 'none', cursor: 'pointer' }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>download</span>
+                  Save Photo
+                </button>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── ADD MEMORY MODAL ── */}
       <AnimatePresence>
@@ -636,57 +994,33 @@ export default function Memories() {
         </div>
 
         {loadingMems ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
-            {[...Array(6)].map((_, i) => (
-              <div key={i} style={{ height: '14rem', background: 'var(--surface-container)', borderRadius: '0.5rem', opacity: 0.5 }} />
+          <div style={{ columns: '3 220px', columnGap: '2rem' }}>
+            {[...Array(8)].map((_, i) => (
+              <div key={i} style={{ height: `${12 + (i % 3) * 3}rem`, background: 'var(--surface-container)', borderRadius: '0.5rem', opacity: 0.5, marginBottom: '2rem', breakInside: 'avoid' }} />
             ))}
           </div>
         ) : memories.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--outline)' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '3.5rem', marginBottom: '1rem', display: 'block' }}>photo_library</span>
             <p style={{ fontFamily: "'Nanum Pen Script', cursive", fontSize: '1.4rem', marginBottom: '0.5rem' }}>No memories yet!</p>
-            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem' }}>Be the first to add one — sign in and tap "Add a Memory" above.</p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem' }}>Be the first to add one — sign in and tap "Upload a Group Memory" above.</p>
           </motion.div>
         ) : (
-          (() => {
-            const memoriesByYear = memories.reduce((acc, mem) => {
-              let year = '2026';
-              if (mem.takenAt) {
-                year = mem.takenAt.split('-')[0];
-              } else if (mem.createdAt?.toDate) {
-                year = mem.createdAt.toDate().getFullYear().toString();
-              }
-              if (!acc[year]) acc[year] = [];
-              acc[year].push(mem);
-              return acc;
-            }, {});
-            const sortedYears = Object.keys(memoriesByYear).sort((a,b) => b - a);
-
-            return (
-              <div>
-                {sortedYears.map((year) => (
-                  <div key={year} style={{ marginBottom: '3rem' }}>
-                    <h3 style={{ fontFamily: 'var(--font-headline)', fontSize: '2rem', fontWeight: 900, color: 'var(--primary)', marginBottom: '1.5rem', borderBottom: '2px solid rgba(189,187,146,0.3)', paddingBottom: '0.5rem' }}>
-                      {year}
-                    </h3>
-                    <div className="masonry-wall">
-                      {memoriesByYear[year].map((mem, i) => (
-                        <div key={mem.id} className="masonry-item">
-                          <MemoryWallCard
-                            mem={mem}
-                            i={i}
-                            isAdminUser={isAdmin()}
-                            currentUserNickname={currentUser?.nickname}
-                            onDelete={handleDelete}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+          // CSS columns masonry — no gaps from long text, naturally scattered
+          <div style={{ columns: '4 200px', columnGap: '2.5rem', padding: '0.5rem 0 2rem' }}>
+            {memories.map((mem, i) => (
+              <div key={mem.id} style={{ breakInside: 'avoid', marginBottom: '2.5rem', display: 'inline-block', width: '100%' }}>
+                <MemoryWallCard
+                  mem={mem}
+                  i={i}
+                  isAdminUser={isAdmin()}
+                  currentUserNickname={currentUser?.nickname}
+                  onDelete={handleDelete}
+                  onExpand={setExpandedMem}
+                />
               </div>
-            );
-          })()
+            ))}
+          </div>
         )}
       </section>
 

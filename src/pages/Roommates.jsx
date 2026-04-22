@@ -88,7 +88,7 @@ export default function Roommates() {
           lineHeight: 1.5,
           transform: 'rotate(-0.5deg)',
         }}>
-          Six curators. One shared story. Enough caffeine to power a small city.
+          Six curators. One shared story. Enough energy to power a small city.
         </p>
       </motion.div>
 
@@ -98,12 +98,12 @@ export default function Roommates() {
         animate="show"
         variants={stagger}
         style={{
-          maxWidth: '64rem',
+          maxWidth: '48rem',
           margin: '0 auto',
           padding: '0 2rem 5rem',
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '3.5rem 2.5rem',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '3rem 2rem',
           alignItems: 'start',
         }}
       >

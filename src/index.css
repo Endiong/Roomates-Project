@@ -99,19 +99,19 @@ img { display: block; max-width: 100%; }
 
 /* ═══════ SCRAPBOOK BACKGROUND PATTERNS ═══════ */
 .scrapbook-dots {
-  background-image: radial-gradient(#e2d1bc 1px, transparent 1px);
-  background-size: 28px 28px;
-  background-color: #fdf8f0;
-}
-
-.scrapbook-dots-pink {
-  background-image: radial-gradient(#e2d1bc 1.5px, transparent 1.5px);
+  background-image: radial-gradient(#b8a98e 1.5px, transparent 1.5px);
   background-size: 24px 24px;
   background-color: #fdf8f0;
 }
 
+.scrapbook-dots-pink {
+  background-image: radial-gradient(#c4a8a8 1.5px, transparent 1.5px);
+  background-size: 22px 22px;
+  background-color: #fdf8f0;
+}
+
 .dotted-primary {
-  background-image: radial-gradient(#815a5b 0.5px, transparent 0.5px);
+  background-image: radial-gradient(#815a5b 1px, transparent 1px);
   background-size: 20px 20px;
   background-color: #fde8e8;
 }

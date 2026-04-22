@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import SiteBanner from './components/SiteBanner';
 import Footer from './components/Footer';
 import Landing from './pages/Landing';
 import Roommates from './pages/Roommates';
@@ -17,6 +18,7 @@ export default function App() {
     <AuthProvider>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Navbar />
+        <SiteBanner />
         <main style={{ flex: 1 }}>
           <AnimatePresence mode="wait">
             <Routes>

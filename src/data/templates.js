@@ -117,7 +117,6 @@ export const TEXT_TEMPLATES = [
 export const PHOTO_FRAMES = [
   { id: 'polaroid', label: 'Polaroid', bg: '#ffffff', padding: '0.75rem 0.75rem 3.5rem', shadow: '0 14px 40px rgba(57,57,27,0.15)' },
   { id: 'classic', label: 'Classic Mat', bg: '#ffffff', padding: '0.4rem', border: '1px solid #e0e0e0', shadow: '0 8px 24px rgba(57,57,27,0.12)' },
-  { id: 'round', label: 'Circle Crop', bg: '#ffffff', borderRadius: '50%', padding: '0.4rem', shadow: '0 8px 24px rgba(57,57,27,0.12)' },
   { id: 'filmstrip', label: 'Film Strip', bg: '#1a1a1a', padding: '0.25rem', border: '5px solid #1a1a1a', shadow: '0 8px 24px rgba(0,0,0,0.25)', sprockets: true },
   { id: 'taped', label: 'Taped', bg: 'transparent', padding: '0', shadow: '0 6px 16px rgba(0,0,0,0.12)', taped: true },
   { id: 'gallery', label: 'Gallery Frame', bg: '#ffffff', padding: '0.6rem', border: '12px solid #2a2a2a', shadow: '0 12px 30px rgba(0,0,0,0.3)', borderRadius: '2px' },

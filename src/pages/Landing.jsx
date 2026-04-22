@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { roommates, groupMemories, timeline, groupStats } from '../data/roommates';
@@ -158,6 +158,7 @@ export default function Landing() {
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '22%']);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+  const [avatarModal, setAvatarModal] = useState(null); // holds the roommate object
 
   return (
     <div style={{ background: 'var(--background)', overflow: 'hidden' }}>
@@ -481,7 +482,7 @@ export default function Landing() {
             </div>
           </Reveal>
 
-          {/* Horizontal scroll of small polaroids */}
+          {/* Scroll-snap roomie polaroid strip */}
           <div style={{
             display: 'flex',
             gap: '1.5rem',
@@ -492,7 +493,20 @@ export default function Landing() {
           }}>
             {roommates.map((r, i) => (
               <Reveal key={r.id} delay={i * 0.07} direction="up">
-                <Link to={`/profile/${r.id}`} style={{ textDecoration: 'none', flexShrink: 0, scrollSnapAlign: 'start' }}>
+                {/* No Link wrapper — opens avatar lightbox instead */}
+                <button
+                  onClick={() => setAvatarModal(r)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    textDecoration: 'none',
+                    flexShrink: 0,
+                    scrollSnapAlign: 'start',
+                    display: 'block',
+                  }}
+                >
                   <motion.div
                     whileHover={{ y: -8, rotate: 0, transition: { duration: 0.25 } }}
                     style={{
@@ -508,12 +522,90 @@ export default function Landing() {
                     <p style={{ fontFamily: 'var(--font-handwritten)', fontSize: '1rem', textAlign: 'center', color: 'var(--primary)', marginTop: '0.35rem' }}>{r.name}</p>
                     <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center', color: 'var(--outline)', marginTop: '0.1rem' }}>{r.tagline}</p>
                   </motion.div>
-                </Link>
+                </button>
               </Reveal>
             ))}
           </div>
         </div>
       </section>
+
+      {/* Avatar lightbox modal */}
+      <AnimatePresence>
+        {avatarModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setAvatarModal(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              background: 'rgba(0,0,0,0.7)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '2rem',
+              cursor: 'zoom-out',
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: 'white',
+                padding: '1.25rem 1.25rem 2.5rem',
+                boxShadow: '0 32px 80px rgba(0,0,0,0.35)',
+                maxWidth: '22rem',
+                width: '100%',
+                position: 'relative',
+                cursor: 'default',
+              }}
+            >
+              {/* Washi tape strip */}
+              <div style={{ position: 'absolute', top: '-0.6rem', left: '50%', transform: 'translateX(-50%) rotate(-2deg)', width: '5rem', height: '1.1rem', background: 'rgba(185,238,219,0.75)', backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.2) 5px, rgba(255,255,255,0.2) 10px)' }} />
+              <img
+                src={avatarModal.avatar}
+                alt={avatarModal.name}
+                style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', display: 'block', marginBottom: '0.75rem' }}
+              />
+              <p style={{ fontFamily: 'var(--font-handwritten)', fontSize: '1.75rem', textAlign: 'center', color: 'var(--primary)', marginBottom: '0.2rem' }}>{avatarModal.name}</p>
+              <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center', color: 'var(--outline)', marginBottom: '0.75rem' }}>{avatarModal.tagline}</p>
+              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                <Link
+                  to={`/profile/${avatarModal.id}`}
+                  onClick={() => setAvatarModal(null)}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                    padding: '0.45rem 1.1rem', borderRadius: 'var(--radius-full)',
+                    background: 'var(--primary)', color: 'white',
+                    fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.8rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>person</span>
+                  View Profile
+                </Link>
+                <button
+                  onClick={() => setAvatarModal(null)}
+                  style={{
+                    padding: '0.45rem 1rem', borderRadius: 'var(--radius-full)',
+                    background: 'transparent', border: '1.5px solid rgba(189,187,146,0.4)',
+                    fontFamily: 'var(--font-headline)', fontWeight: 600, fontSize: '0.8rem',
+                    color: 'var(--on-surface-variant)', cursor: 'pointer',
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ══════════════════════════════════════════════════════════ */}
       {/* ─── SECTION 4: MEMORIES WALL PREVIEW ─── */}

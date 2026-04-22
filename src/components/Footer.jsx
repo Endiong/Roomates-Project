@@ -41,7 +41,7 @@ export default function Footer() {
             color: 'var(--on-surface-variant)',
             opacity: 0.5,
           }}>
-            Room 3 Chronicles
+            Room 3
           </span>
         </div>
 
@@ -54,7 +54,7 @@ export default function Footer() {
           transform: 'rotate(-0.5deg)',
           display: 'inline-block',
         }}>
-          made with love, chaos & way too much tea ✦
+          made with love, chaos & way too much yam ✦
         </span>
 
         {/* Right — year */}
@@ -66,7 +66,7 @@ export default function Footer() {
           color: 'var(--on-surface-variant)',
           opacity: 0.35,
         }}>
-          © 2024
+          © 2026
         </span>
       </div>
     </footer>

@@ -80,16 +80,7 @@ export async function updateUserPin(nickname, newPinHash) {
   await updateDoc(ref, { pinHash: newPinHash, updatedAt: serverTimestamp() });
 }
 
-// ─── SITE BANNER ───────────────────────────────────────────────────
 
-export async function setBanner(text) {
-  await setDoc(doc(db, 'config', 'banner'), { text, updatedAt: serverTimestamp() });
-}
-
-export async function getBanner() {
-  const snap = await getDoc(doc(db, 'config', 'banner'));
-  return snap.exists() ? snap.data().text : null;
-}
 
 // ─── PROFILE NOTES (Peer Notes) ────────────────────────────────────
 
@@ -124,4 +115,42 @@ export async function getAllProfileNotes() {
 
 export async function deleteProfileNote(noteId) {
   return deleteDoc(doc(db, 'profileNotes', noteId));
+}
+
+// ─── MOODS ─────────────────────────────────────────────────────────
+
+export async function getMoods() {
+  const q = query(collection(db, 'moods'), orderBy('updatedAt', 'desc'));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function setMood(nickname, { emoji, text, displayName }) {
+  // One mood per user — keyed by nickname so update overwrites
+  const ref = doc(db, 'moods', nickname.toLowerCase().trim());
+  return setDoc(ref, {
+    nickname: nickname.toLowerCase().trim(),
+    displayName,
+    emoji,
+    text,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function deleteMood(nickname) {
+  return deleteDoc(doc(db, 'moods', nickname.toLowerCase().trim()));
+}
+
+// ─── SITE CONFIG (banner, etc.) ───────────────────────────────────────────
+
+export async function getBanner() {
+  const ref = doc(db, 'config', 'site');
+  const snap = await getDoc(ref);
+  if (!snap.exists()) return '';
+  return snap.data().banner || '';
+}
+
+export async function setBanner(text) {
+  const ref = doc(db, 'config', 'site');
+  return setDoc(ref, { banner: text }, { merge: true });
 }
