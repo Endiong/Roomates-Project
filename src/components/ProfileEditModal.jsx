@@ -6,15 +6,26 @@ export default function ProfileEditModal({ roommate, currentData, onClose, onSav
     finalNote: currentData?.finalNote || roommate.finalNote || '',
     quote: currentData?.quote || roommate.quote || '',
     roomVibe: currentData?.roomVibe || roommate.roomVibe || '',
-    isDarkTheme: currentData?.isDarkTheme || false,
     themeColor: currentData?.themeColor || null,
+    redFlags: (currentData?.redFlags || roommate.redFlags || []).join('\n'),
+    greenFlags: (currentData?.greenFlags || roommate.greenFlags || []).join('\n'),
+    todoList: (currentData?.todoList || roommate.todoList || []).join('\n'),
+    personalityChips: (currentData?.personalityChips || roommate.personalityChips || []).join(', '),
+    favSong: currentData?.favSong || roommate.favSong || '',
+    spotifyLink: currentData?.spotifyLink || roommate.spotifyLink || '',
   });
 
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
-    await onSave(formData);
+    await onSave({
+      ...formData,
+      redFlags: formData.redFlags.split('\n').map(s => s.trim()).filter(s => s !== ''),
+      greenFlags: formData.greenFlags.split('\n').map(s => s.trim()).filter(s => s !== ''),
+      todoList: formData.todoList.split('\n').map(s => s.trim()).filter(s => s !== ''),
+      personalityChips: formData.personalityChips.split(',').map(s => s.trim()).filter(s => s !== ''),
+    });
     setSaving(false);
   }
 
@@ -39,22 +50,10 @@ export default function ProfileEditModal({ roommate, currentData, onClose, onSav
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
             <div>
-              <label style={{ display: 'block', fontFamily: 'var(--font-label)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--on-surface-variant)', marginBottom: '0.4rem' }}>Background Mode</label>
-              <button 
-                onClick={() => setFormData({ ...formData, isDarkTheme: !formData.isDarkTheme })}
-                style={{
-                  width: '100%', padding: '0.75rem', borderRadius: '0.5rem', background: formData.isDarkTheme ? '#1a1a1a' : '#f5f5f5', color: formData.isDarkTheme ? '#ffffff' : '#000000', border: '1px solid var(--outline-variant)', cursor: 'pointer', fontFamily: 'var(--font-headline)', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                }}
-              >
-                <span className="material-symbols-outlined">{formData.isDarkTheme ? 'dark_mode' : 'light_mode'}</span>
-                {formData.isDarkTheme ? 'Dark Mode Background' : 'Light Mode Background'}
-              </button>
-            </div>
-
-            <div>
               <label style={{ display: 'block', fontFamily: 'var(--font-label)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--on-surface-variant)', marginBottom: '0.4rem' }}>Your Room Vibe</label>
               <input
                 type="text" value={formData.roomVibe} onChange={e => setFormData({ ...formData, roomVibe: e.target.value })}
+                placeholder="e.g. Dramatic Mornings, Cooking, Reading manga..."
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--outline-variant)', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}
               />
             </div>
@@ -68,6 +67,63 @@ export default function ProfileEditModal({ roommate, currentData, onClose, onSav
             </div>
 
             <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-label)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--on-surface-variant)', marginBottom: '0.4rem' }}>Personality Stickers (Comma separated)</label>
+              <input
+                type="text" value={formData.personalityChips} onChange={e => setFormData({ ...formData, personalityChips: e.target.value })}
+                placeholder="Night Owl, Foodie, The Coder..."
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--outline-variant)', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: '0.95rem' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-label)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--error)', marginBottom: '0.4rem' }}>Red Flags (One per line)</label>
+              <textarea
+                value={formData.redFlags} onChange={e => setFormData({ ...formData, redFlags: e.target.value })}
+                rows={3}
+                placeholder="Will scream your name across the room..."
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--outline-variant)', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: '0.95rem', resize: 'vertical' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-label)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--success)', marginBottom: '0.4rem' }}>Green Flags (One per line)</label>
+              <textarea
+                value={formData.greenFlags} onChange={e => setFormData({ ...formData, greenFlags: e.target.value })}
+                rows={3}
+                placeholder="Always has food to share..."
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--outline-variant)', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: '0.95rem', resize: 'vertical' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontFamily: 'var(--font-label)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--primary)', marginBottom: '0.4rem' }}>To-Do List (One per line)</label>
+              <textarea
+                value={formData.todoList} onChange={e => setFormData({ ...formData, todoList: e.target.value })}
+                rows={4}
+                placeholder="Clean the dishes..."
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--outline-variant)', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: '0.95rem', resize: 'vertical' }}
+              />
+            </div>
+
+            {/* Favourite Music / Playlist */}
+            <div style={{ background: 'rgba(29,185,84,0.06)', borderRadius: '0.75rem', padding: '1rem', border: '1px solid rgba(29,185,84,0.15)' }}>
+              <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#1db954', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>music_note</span>
+                Current Vibe / Fav Song
+              </p>
+              <input
+                type="text" value={formData.favSong} onChange={e => setFormData({ ...formData, favSong: e.target.value })}
+                placeholder="e.g. Espresso – Sabrina Carpenter"
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid rgba(29,185,84,0.25)', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: '0.95rem', marginBottom: '0.6rem', boxSizing: 'border-box' }}
+              />
+              <input
+                type="url" value={formData.spotifyLink} onChange={e => setFormData({ ...formData, spotifyLink: e.target.value })}
+                placeholder="Spotify / Apple Music link (optional)"
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid rgba(29,185,84,0.25)', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: '0.9rem', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div>
               <label style={{ display: 'block', fontFamily: 'var(--font-label)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--on-surface-variant)', marginBottom: '0.4rem' }}>Final Note (Polaroid text)</label>
               <textarea
                 value={formData.finalNote} onChange={e => setFormData({ ...formData, finalNote: e.target.value })}
@@ -75,8 +131,6 @@ export default function ProfileEditModal({ roommate, currentData, onClose, onSav
                 style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--outline-variant)', background: 'transparent', fontFamily: 'var(--font-body)', fontSize: '0.95rem', resize: 'vertical' }}
               />
             </div>
-
-            {/* Note: In a future update these will be full array editors. For now, we allow vibe and quotes as the primary edits! */}
 
             <button onClick={handleSave} disabled={saving} style={{
               width: '100%', padding: '0.85rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '1rem', cursor: saving ? 'not-allowed' : 'pointer', marginTop: '1rem', opacity: saving ? 0.7 : 1

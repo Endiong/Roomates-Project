@@ -667,64 +667,35 @@ export default function Landing() {
               The Timeline
             </h2>
           </Reveal>
-          <div style={{ position: 'relative' }}>
-            {/* Vertical line */}
-            <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '2px', background: 'rgba(189,187,146,0.35)', transform: 'translateX(-50%)' }} />
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '0.5rem' }}>
+            <div style={{ position: 'relative', display: 'flex', flexWrap: 'nowrap', gap: '1.5rem', minWidth: 'max-content', paddingTop: '1rem' }}>
+              {/* Horizontal line */}
+              <div style={{ position: 'absolute', top: '1.5rem', left: 0, right: 0, height: '2px', background: 'rgba(189,187,146,0.35)', transform: 'translateX(-50%)' }} />
 
-            {timeline.map((item, i) => {
-              const isLeft = i % 2 === 0;
-              return (
-                <Reveal key={i} delay={i * 0.1} direction={isLeft ? 'left' : 'right'}>
+              {timeline.map((item, i) => (
+                <div key={i} style={{ width: '10rem', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+                  {/* Dot */}
                   <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto 1fr',
-                    alignItems: 'center',
-                    gap: '1.5rem',
-                    marginBottom: '2.5rem',
+                    width: '1rem', height: '1rem', borderRadius: '50%',
+                    background: item.dotColor, border: '3px solid white',
+                    boxShadow: `0 0 0 3px ${item.dotColor}44`, marginBottom: '0.75rem',
+                    position: 'relative',
                   }}>
-                    {/* Left side */}
-                    <div style={{ textAlign: isLeft ? 'right' : 'left', order: isLeft ? 0 : 2 }}>
-                      {isLeft && (
-                        <div style={{ display: 'inline-block', padding: '0.75rem 1.25rem', background: 'var(--surface-container-lowest)', boxShadow: '0 4px 16px rgba(57,57,27,0.08)', maxWidth: '18rem', textAlign: 'right' }}>
-                          <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: item.dotColor, marginBottom: '0.25rem' }}>{item.date}</p>
-                          <p style={{ fontFamily: 'var(--font-handwritten)', fontSize: '1rem', color: 'var(--on-surface)' }}>{item.label}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Center dot */}
-                    <div style={{
-                      width: '1rem',
-                      height: '1rem',
-                      borderRadius: '50%',
-                      background: item.dotColor,
-                      border: '3px solid white',
-                      boxShadow: `0 0 0 3px ${item.dotColor}44`,
-                      flexShrink: 0,
-                      position: 'relative',
-                    }}>
-                      {item.pulse && (
-                        <motion.div
-                          animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
-                          transition={{ repeat: Infinity, duration: 2 }}
-                          style={{ position: 'absolute', inset: '-4px', borderRadius: '50%', background: item.dotColor, opacity: 0.4 }}
-                        />
-                      )}
-                    </div>
-
-                    {/* Right side */}
-                    <div style={{ textAlign: isLeft ? 'left' : 'right', order: isLeft ? 2 : 0 }}>
-                      {!isLeft && (
-                        <div style={{ display: 'inline-block', padding: '0.75rem 1.25rem', background: 'var(--surface-container-lowest)', boxShadow: '0 4px 16px rgba(57,57,27,0.08)', maxWidth: '18rem', textAlign: 'left' }}>
-                          <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: item.dotColor, marginBottom: '0.25rem' }}>{item.date}</p>
-                          <p style={{ fontFamily: 'var(--font-handwritten)', fontSize: '1rem', color: 'var(--on-surface)' }}>{item.label}</p>
-                        </div>
-                      )}
-                    </div>
+                    {item.pulse && (
+                      <motion.div
+                        animate={{ scale: [1, 1.8, 1], opacity: [0.6, 0, 0.6] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        style={{ position: 'absolute', inset: '-4px', borderRadius: '50%', background: item.dotColor, opacity: 0.4 }}
+                      />
+                    )}
                   </div>
-                </Reveal>
-              );
-            })}
+                  <div style={{ background: 'var(--surface-container-lowest)', padding: '0.65rem 0.85rem', boxShadow: '0 4px 16px rgba(57,57,27,0.08)' }}>
+                    <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: item.dotColor, marginBottom: '0.2rem' }}>{item.date}</p>
+                    <p style={{ fontFamily: 'var(--font-handwritten)', fontSize: '0.95rem', color: 'var(--on-surface)', lineHeight: 1.4 }}>{item.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

@@ -54,7 +54,7 @@ export default function Footer() {
           transform: 'rotate(-0.5deg)',
           display: 'inline-block',
         }}>
-          made with love, chaos & way too much yam ✦
+          made with love, chaos & way too much bread ✦
         </span>
 
         {/* Right — year */}

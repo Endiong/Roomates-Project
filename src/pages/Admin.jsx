@@ -34,7 +34,7 @@ export default function Admin() {
   const [users, setUsers] = useState([]);
   const [profileNotes, setProfileNotes] = useState([]);
   const [memFilter, setMemFilter] = useState('all');
-  const [banner, setBannerText] = useState('');
+  const [bannerText, setBannerText] = useState('');
   const [bannerInput, setBannerInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -100,6 +100,7 @@ export default function Admin() {
     setBannerText(bannerInput);
     setSaving(false);
     showToast('Banner saved! It\'s now live on the site ✓');
+    setTimeout(() => window.location.reload(), 1000);
   }
 
   async function clearBanner() {
@@ -109,6 +110,7 @@ export default function Admin() {
     setBannerInput('');
     setSaving(false);
     showToast('Banner cleared.');
+    setTimeout(() => window.location.reload(), 1000);
   }
 
   async function resetPin() {

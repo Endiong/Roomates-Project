@@ -48,7 +48,11 @@ export default function Login() {
     setLoading(true);
     try {
       const user = await login(nickname.trim(), pin);
-      navigate(`/profile/${user.roommateId}`);
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate(`/profile/${user.roommateId}`);
+      }
     } catch (err) {
       setError(err.message || 'Login failed. Try again!');
     } finally {

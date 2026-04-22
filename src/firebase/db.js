@@ -13,6 +13,8 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  writeBatch,
+  deleteField,
 } from 'firebase/firestore';
 
 // ─── PROFILES ─────────────────────────────────────────────────────
@@ -59,6 +61,28 @@ export async function deleteMemory(memoryId) {
 
 export async function setMemoryVisible(memoryId, visible) {
   return updateDoc(doc(db, 'memories', memoryId), { visible, updatedAt: serverTimestamp() });
+}
+
+export async function updateMemoryPosition(memoryId, x, y) {
+  return updateDoc(doc(db, 'memories', memoryId), {
+    customX: x,
+    customY: y,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function clearAllMemoryPositions() {
+  const mems = await getMemories();
+  const batch = writeBatch(db);
+  mems.forEach(m => {
+    if (m.customX !== undefined || m.customY !== undefined) {
+      batch.update(doc(db, 'memories', m.id), {
+        customX: deleteField(),
+        customY: deleteField(),
+      });
+    }
+  });
+  await batch.commit();
 }
 
 // ─── ADMIN ─────────────────────────────────────────────────────────

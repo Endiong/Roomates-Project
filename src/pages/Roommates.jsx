@@ -77,7 +77,7 @@ export default function Roommates() {
           borderRadius: 'var(--radius-full)',
           marginBottom: '0.85rem',
         }}>
-          Room 3 Chronicles · 6 Roommates
+          6 Pretty Girlies
         </div>
         <p style={{
           fontFamily: 'var(--font-handwritten)',
@@ -92,18 +92,19 @@ export default function Roommates() {
         </p>
       </motion.div>
 
-      {/* ─── GRID — 3 columns × 2 rows ─── */}
+      {/* ─── GRID — 3 columns on desktop, 2 on mobile ─── */}
       <motion.div
         initial="hidden"
         animate="show"
         variants={stagger}
+        className="roommates-grid"
         style={{
           maxWidth: '48rem',
           margin: '0 auto',
-          padding: '0 2rem 5rem',
+          padding: '0 1.25rem 5rem',
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '3rem 2rem',
+          gap: '3rem 1.5rem',
           alignItems: 'start',
         }}
       >
@@ -169,27 +170,29 @@ export default function Roommates() {
                   </div>
 
                   {/* Info strip */}
-                  <div style={{ padding: '0.5rem 0.3rem 0' }}>
+                  <div style={{ padding: '0.5rem 0.3rem 0', textAlign: 'center' }}>
                     <h3 style={{
                       fontFamily: 'var(--font-handwritten)',
                       fontSize: '1.05rem',
                       color: theme.accentColor,
                       marginBottom: '0.05rem',
+                      textAlign: 'center',
                     }}>
                       {roommate.name} {roommate.emoji}
                     </h3>
                     <p style={{
                       fontFamily: 'var(--font-label)',
-                      fontSize: '0.58rem',
+                      fontSize: '0.55rem',
                       fontWeight: 700,
                       textTransform: 'uppercase',
                       letterSpacing: '0.09em',
                       color: 'var(--on-surface-variant)',
-                      marginBottom: '0.4rem',
+                      marginBottom: '0.35rem',
+                      textAlign: 'center',
                     }}>
                       {roommate.tagline}
                     </p>
-                    <div style={{ display: 'flex', gap: '0.2rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '0.2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                       <span style={{
                         padding: '0.15rem 0.45rem',
                         borderRadius: 'var(--radius-full)',
@@ -266,11 +269,12 @@ export default function Roommates() {
       <style>{`
         .roomie-card-wrapper:hover .roomie-overlay { opacity: 1 !important; }
         .roomie-card-wrapper:hover .roomie-img { transform: scale(1.06); }
-        @media (max-width: 720px) {
-          .roomie-card-wrapper { margin-top: 0 !important; }
+        @media (max-width: 760px) {
+          .roomie-card-wrapper { margin-top: 0 !important; transform: none !important; }
+          .roommates-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 2.5rem 1rem !important; padding: 0 1rem 4rem !important; }
         }
-        @media (max-width: 600px) {
-          .roomie-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        @media (max-width: 480px) {
+          .roommates-grid { gap: 2rem 0.75rem !important; }
         }
       `}</style>
     </div>

@@ -99,9 +99,9 @@ img { display: block; max-width: 100%; }
 
 /* ═══════ SCRAPBOOK BACKGROUND PATTERNS ═══════ */
 .scrapbook-dots {
-  background-image: radial-gradient(#b8a98e 1.5px, transparent 1.5px);
-  background-size: 24px 24px;
-  background-color: #fdf8f0;
+  background-image: radial-gradient(#bdbb92 0.5px, transparent 0.5px);
+  background-size: 22px 22px;
+  background-color: var(--background);
 }
 
 .scrapbook-dots-pink {
@@ -458,4 +458,12 @@ img { display: block; max-width: 100%; }
 
 .masonry-item {
   margin-bottom: 0;
+}
+
+.memory-card-hover {
+  z-index: 10;
+}
+.memory-card-hover:hover {
+  transform: scale(1.05) rotate(0deg) !important;
+  z-index: 20 !important;
 }

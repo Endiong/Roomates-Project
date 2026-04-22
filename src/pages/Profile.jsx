@@ -60,7 +60,7 @@ function TraitChip({ label, accent }) {
 
 export default function Profile() {
   const { id } = useParams();
-  const { currentUser, isOwner } = useAuth();
+  const { currentUser, isOwner, isAdmin } = useAuth();
   const roommate = roommates.find(r => r.id === id);
   const baseTheme = roommateThemes[id] || roommateThemes.maya;
 
@@ -69,13 +69,51 @@ export default function Profile() {
   const [customNote, setCustomNote] = useState('');
   const [customQuote, setCustomQuote] = useState('');
   const [customRoomVibe, setCustomRoomVibe] = useState('');
-  const [isDarkTheme, setIsDarkTheme] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [profileImg, setProfileImg] = useState(roommate?.avatar);
 
-  // Theme colour customisation
+  const [redFlags, setRedFlags] = useState(null);
+  const [greenFlags, setGreenFlags] = useState(null);
+  const [todoList, setTodoList] = useState(null);
+  const [personalityChips, setPersonalityChips] = useState(null);
+  const [loadingOverrides, setLoadingOverrides] = useState(true);
+
+  // Theme colour + pattern customisation
   const [themeColor, setThemeColor] = useState(null); // null = use default
   const [colorSaving, setColorSaving] = useState(false);
+  const [bgPattern, setBgPattern] = useState(null); // null = use default dots
+  const [colorWarning, setColorWarning] = useState(false);
+
+  // Background pattern options
+  const BG_PATTERNS = [
+    { id: 'dots', label: 'Dots', icon: '⬤', fn: (c) => `radial-gradient(${c}66 1.5px, transparent 1.5px)`, size: '24px 24px' },
+    { id: 'stars', label: 'Stars', icon: '✦', fn: (c) => `url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext y='16' font-size='14' opacity='0.35' fill='${encodeURIComponent(c)}'%3E✦%3C/text%3E%3C/svg%3E")`, size: '20px 20px' },
+    { id: 'hearts', label: 'Hearts', icon: '♥', fn: (c) => `url("data:image/svg+xml,%3Csvg width='22' height='22' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext y='17' font-size='13' opacity='0.3' fill='${encodeURIComponent(c)}'%3E♥%3C/text%3E%3C/svg%3E")`, size: '22px 22px' },
+    { id: 'sparkles', label: 'Sparkles', icon: '✨', fn: (c) => `url("data:image/svg+xml,%3Csvg width='24' height='24' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext y='18' font-size='14' opacity='0.28' fill='${encodeURIComponent(c)}'%3E✨%3C/text%3E%3C/svg%3E")`, size: '24px 24px' },
+    { id: 'cross', label: 'Cross', icon: '✕', fn: (c) => `url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='4' y1='4' x2='16' y2='16' stroke='${encodeURIComponent(c)}' stroke-width='1.5' opacity='0.25'/%3E%3Cline x1='16' y1='4' x2='4' y2='16' stroke='${encodeURIComponent(c)}' stroke-width='1.5' opacity='0.25'/%3E%3C/svg%3E")`, size: '20px 20px' },
+    { id: 'dash', label: 'Dashes', icon: '— ', fn: (c) => `url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='3' y1='10' x2='17' y2='10' stroke='${encodeURIComponent(c)}' stroke-width='1.5' opacity='0.25'/%3E%3C/svg%3E")`, size: '20px 20px' },
+    { id: 'diamond', label: 'Diamonds', icon: '◇', fn: (c) => `url("data:image/svg+xml,%3Csvg width='22' height='22' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='11,3 19,11 11,19 3,11' stroke='${encodeURIComponent(c)}' stroke-width='1.5' fill='none' opacity='0.22'/%3E%3C/svg%3E")`, size: '22px 22px' },
+    { id: 'moon', label: 'Moons', icon: '☽', fn: (c) => `url("data:image/svg+xml,%3Csvg width='22' height='22' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext y='17' font-size='14' opacity='0.28' fill='${encodeURIComponent(c)}'%3E☽%3C/text%3E%3C/svg%3E")`, size: '22px 22px' },
+  ];
+
+  function getPatternStyle(patId, color) {
+    const pat = BG_PATTERNS.find(p => p.id === patId);
+    if (!pat) return BG_PATTERNS[0].fn(color);
+    return pat.fn(color);
+  }
+  function getPatternSize(patId) {
+    const pat = BG_PATTERNS.find(p => p.id === patId);
+    return pat?.size || '24px 24px';
+  }
+
+  function hexLuminance(hex) {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const toLinear = c => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+  }
 
   // Peer Notes
   const [peerNotes, setPeerNotes] = useState([]);
@@ -86,14 +124,20 @@ export default function Profile() {
   // Computed theme — merge Firestore colour override into base theme
   const theme = themeColor
     ? {
-        ...baseTheme,
-        accentColor: themeColor,
-        dotColor: themeColor + '66',
-        patternStyle: `radial-gradient(${themeColor}66 1.5px, transparent 1.5px)`,
-        washibg: themeColor + 'bb',
-        accentContainer: themeColor + '33',
-      }
+      ...baseTheme,
+      accentColor: themeColor,
+      dotColor: themeColor + '66',
+      patternStyle: `radial-gradient(${themeColor}66 1.5px, transparent 1.5px)`,
+      washibg: themeColor + 'bb',
+      accentContainer: themeColor + '33',
+    }
     : baseTheme;
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     setProfileImg(roommate?.avatar);
@@ -106,13 +150,17 @@ export default function Profile() {
       getProfileOverrides(id).then(data => {
         if (data) {
           if (data.themeColor) setThemeColor(data.themeColor);
+          if (data.bgPattern) setBgPattern(data.bgPattern);
           if (data.avatar) setProfileImg(data.avatar);
           if (data.finalNote) setCustomNote(data.finalNote);
           if (data.quote) setCustomQuote(data.quote);
           if (data.roomVibe) setCustomRoomVibe(data.roomVibe);
-          if (data.isDarkTheme) setIsDarkTheme(data.isDarkTheme);
+          if (data.redFlags) setRedFlags(data.redFlags);
+          if (data.greenFlags) setGreenFlags(data.greenFlags);
+          if (data.todoList) setTodoList(data.todoList);
+          if (data.personalityChips) setPersonalityChips(data.personalityChips);
         }
-      }).catch(() => {});
+      }).catch(() => { }).finally(() => setLoadingOverrides(false));
     });
   }, [id, roommate]);
 
@@ -126,6 +174,14 @@ export default function Profile() {
         <Link to="/roommates" style={{ color: 'var(--primary)', fontFamily: 'var(--font-headline)', fontWeight: 600 }}>
           ← Back to Roomies
         </Link>
+      </div>
+    );
+  }
+
+  if (loadingOverrides) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: baseTheme.dotBg }}>
+        <p style={{ fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '1.25rem', color: 'var(--on-surface-variant)' }}>Opening Space...</p>
       </div>
     );
   }
@@ -160,6 +216,13 @@ export default function Profile() {
   }
 
   async function saveThemeColor(color) {
+    // Light-color safety: warn if color is very light
+    if (hexLuminance(color) > 0.8) {
+      setColorWarning(true);
+      setTimeout(() => setColorWarning(false), 3000);
+    } else {
+      setColorWarning(false);
+    }
     setThemeColor(color);
     setColorSaving(true);
     try {
@@ -171,29 +234,44 @@ export default function Profile() {
     }
   }
 
+  async function saveBgPattern(patId) {
+    setBgPattern(patId);
+    try {
+      await setProfile(id, { bgPattern: patId });
+    } catch (err) {
+      console.error('Pattern save failed:', err);
+    }
+  }
+
   const accent = theme.accentColor;
   const handCss = { fontFamily: theme.handwrittenFont };
+  const resolvedPattern = getPatternStyle(bgPattern || 'dots', accent);
+  const resolvedPatternSize = getPatternSize(bgPattern || 'dots');
 
   return (
     <div style={{
-      background: isDarkTheme ? '#141414' : theme.dotBg,
-      backgroundImage: isDarkTheme ? `radial-gradient(rgba(255,255,255,0.06) 1.5px, transparent 1.5px)` : theme.patternStyle,
-      backgroundSize: theme.patternSize,
+      background: theme.dotBg,
+      backgroundImage: resolvedPattern,
+      backgroundSize: resolvedPatternSize,
       minHeight: '100vh',
+      overflowX: 'hidden',
     }}>
-      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: '3rem 1.25rem 5rem' }}>
+      <div style={{ maxWidth: '80rem', margin: '0 auto', padding: isMobile ? '1.5rem 1rem 4rem' : '3rem 1.25rem 5rem' }}>
 
         {editMode && isOwner(id) && (
           <ProfileEditModal
             roommate={roommate}
-            currentData={{ finalNote: customNote, quote: customQuote, roomVibe: customRoomVibe, isDarkTheme, themeColor }}
+            currentData={{ finalNote: customNote, quote: customQuote, roomVibe: customRoomVibe, themeColor, redFlags, greenFlags, todoList, personalityChips }}
             onClose={() => setEditMode(false)}
             onSave={async (data) => {
               await setProfile(id, data);
               if (data.finalNote !== undefined) setCustomNote(data.finalNote);
               if (data.quote !== undefined) setCustomQuote(data.quote);
               if (data.roomVibe !== undefined) setCustomRoomVibe(data.roomVibe);
-              if (data.isDarkTheme !== undefined) setIsDarkTheme(data.isDarkTheme);
+              if (data.redFlags !== undefined) setRedFlags(data.redFlags);
+              if (data.greenFlags !== undefined) setGreenFlags(data.greenFlags);
+              if (data.todoList !== undefined) setTodoList(data.todoList);
+              if (data.personalityChips !== undefined) setPersonalityChips(data.personalityChips);
               setEditMode(false);
             }}
           />
@@ -202,19 +280,19 @@ export default function Profile() {
         {/* ─── HERO HEADER ─── */}
         <motion.header
           initial="hidden" animate="show" variants={stagger}
-          style={{ textAlign: 'center', marginBottom: '3rem', position: 'relative' }}
+          style={{ textAlign: 'center', marginBottom: isMobile ? '2rem' : '3rem', position: 'relative' }}
         >
           <motion.div variants={fadeUp}>
             <h1 style={{
               fontFamily: 'var(--font-headline)',
               fontWeight: 900,
-              fontSize: 'clamp(2.5rem, 7vw, 5rem)',
+              fontSize: isMobile ? 'clamp(2rem, 10vw, 3rem)' : 'clamp(2.5rem, 7vw, 5rem)',
               letterSpacing: '-0.04em',
               color: accent,
               lineHeight: 1,
               marginBottom: '0.75rem',
             }}>
-              {roommate.name}'s Inner World
+              {roommate.name}'s Space
             </h1>
           </motion.div>
           <motion.p variants={fadeUp} style={{ ...handCss, fontSize: '1.5rem', color: 'var(--on-surface-variant)', transform: 'rotate(-1.5deg)' }}>
@@ -222,12 +300,16 @@ export default function Profile() {
           </motion.p>
 
           {/* Decorative icon stickers */}
-          <div style={{ position: 'absolute', top: 0, left: '4%', opacity: 0.12, transform: 'rotate(15deg)', color: accent }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '6rem', fontVariationSettings: "'FILL' 1" }}>{theme.heroIcon}</span>
-          </div>
-          <div style={{ position: 'absolute', top: '50%', right: '4%', opacity: 0.1, transform: 'rotate(-12deg) translateY(-50%)', color: 'var(--tertiary)' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '4rem', fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
-          </div>
+          {!isMobile && (
+            <>
+              <div style={{ position: 'absolute', top: 0, left: '4%', opacity: 0.12, transform: 'rotate(15deg)', color: accent }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '6rem', fontVariationSettings: "'FILL' 1" }}>{theme.heroIcon}</span>
+              </div>
+              <div style={{ position: 'absolute', top: '50%', right: '4%', opacity: 0.1, transform: 'rotate(-12deg) translateY(-50%)', color: 'var(--tertiary)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '4rem', fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
+              </div>
+            </>
+          )}
 
           {/* Edit mode button + colour wheel */}
           {isOwner(id) && (
@@ -284,6 +366,39 @@ export default function Profile() {
                 {/* Colour preview dot */}
                 <div style={{ width: '2.2rem', height: '2.2rem', borderRadius: '50%', background: accent, border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }} title={`Current: ${accent}`} />
               </div>
+
+              {/* Background Pattern Picker */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--on-surface-variant)', opacity: 0.6 }}>Background Pattern</p>
+                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {BG_PATTERNS.map(pat => (
+                    <button
+                      key={pat.id}
+                      onClick={() => saveBgPattern(pat.id)}
+                      title={pat.label}
+                      style={{
+                        width: '2rem', height: '2rem',
+                        borderRadius: '50%',
+                        border: `2.5px solid ${(bgPattern || 'dots') === pat.id ? accent : 'rgba(189,187,146,0.4)'}`,
+                        background: (bgPattern || 'dots') === pat.id ? `${accent}22` : 'white',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        transform: (bgPattern || 'dots') === pat.id ? 'scale(1.15)' : 'scale(1)',
+                        color: accent,
+                      }}
+                    >
+                      {pat.icon}
+                    </button>
+                  ))}
+                </div>
+                {colorWarning && (
+                  <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', color: '#be7d2d', fontWeight: 600, maxWidth: '16rem', textAlign: 'center' }}>
+                    ⚠️ That colour is very light — text may be hard to read on your page!
+                  </p>
+                )}
+              </div>
             </motion.div>
           )}
         </motion.header>
@@ -293,20 +408,20 @@ export default function Profile() {
           initial="hidden" whileInView="show" viewport={{ once: true }} variants={stagger}
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(12, 1fr)',
+            gridTemplateColumns: isMobile ? '1fr' : 'repeat(12, 1fr)',
             gap: '1.25rem',
             alignItems: 'start',
           }}
         >
           {/* ── COL 1-4: Polaroid + Identity ── */}
-          <motion.div variants={fadeUp} style={{ gridColumn: 'span 4', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <motion.div variants={fadeUp} style={{ gridColumn: isMobile ? '1 / -1' : 'span 4', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
             {/* Polaroid */}
             <div style={{
               background: 'white',
               padding: '1rem 1rem 3.5rem',
               boxShadow: '0 20px 50px -8px rgba(57,57,27,0.18)',
-              transform: `rotate(${roommate.rotation}deg)`,
+              transform: isMobile ? 'none' : `rotate(${roommate.rotation}deg)`,
               position: 'relative',
               transition: 'transform 0.5s ease',
             }}>
@@ -396,7 +511,7 @@ export default function Profile() {
                 Personality Stickers
               </h3>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                {roommate.personalityChips?.map(chip => (
+                {(personalityChips || roommate.personalityChips)?.map(chip => (
                   <TraitChip key={chip} label={chip} accent={accent} />
                 ))}
                 {roommate.traits?.map(t => (
@@ -431,7 +546,7 @@ export default function Profile() {
           </motion.div>
 
           {/* ── COL 5-8: Middle Column ── */}
-          <motion.div variants={fadeUp} style={{ gridColumn: 'span 5', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <motion.div variants={fadeUp} style={{ gridColumn: isMobile ? '1 / -1' : 'span 5', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
             {/* First Impression vs Now */}
             <div style={{
@@ -444,7 +559,7 @@ export default function Profile() {
               <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '1rem', color: accent, marginBottom: '1rem' }}>
                 First Impression vs. Now
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                 <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.5)', borderRadius: '0.5rem' }}>
                   <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--on-surface-variant)', marginBottom: '0.4rem' }}>
                     They Thought
@@ -478,23 +593,23 @@ export default function Profile() {
             </div>
 
             {/* Red & Green Flags */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div style={{ background: 'rgba(226,209,188,0.3)', padding: '1.25rem', borderRadius: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+              <div style={{ background: '#ffebee', padding: '1.25rem', borderRadius: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: 'var(--error)', fontVariationSettings: "'FILL' 1" }}>flag</span>
-                  <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '0.875rem', color: 'var(--error)' }}>Red Flags</h3>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#c62828', fontVariationSettings: "'FILL' 1" }}>flag</span>
+                  <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '0.875rem', color: '#c62828' }}>Red Flags</h3>
                 </div>
-                {roommate.redFlags?.map((f, i) => (
-                  <p key={i} style={{ ...handCss, fontSize: '0.95rem', color: 'var(--on-surface)', marginBottom: '0.4rem', lineHeight: 1.4 }}>• {f}</p>
+                {(redFlags || roommate.redFlags)?.map((f, i) => (
+                  <p key={i} style={{ ...handCss, fontSize: '0.95rem', color: '#b71c1c', marginBottom: '0.4rem', lineHeight: 1.4 }}>• {f}</p>
                 ))}
               </div>
-              <div style={{ background: `${theme.accentContainer}44`, padding: '1.25rem', borderRadius: '0.5rem' }}>
+              <div style={{ background: '#e8f5e9', padding: '1.25rem', borderRadius: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: accent, fontVariationSettings: "'FILL' 1" }}>flag</span>
-                  <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '0.875rem', color: accent }}>Green Flags</h3>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: '#2e7d32', fontVariationSettings: "'FILL' 1" }}>flag</span>
+                  <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '0.875rem', color: '#2e7d32' }}>Green Flags</h3>
                 </div>
-                {roommate.greenFlags?.map((f, i) => (
-                  <p key={i} style={{ ...handCss, fontSize: '0.95rem', color: 'var(--on-surface)', marginBottom: '0.4rem', lineHeight: 1.4 }}>• {f}</p>
+                {(greenFlags || roommate.greenFlags)?.map((f, i) => (
+                  <p key={i} style={{ ...handCss, fontSize: '0.95rem', color: '#1b5e20', marginBottom: '0.4rem', lineHeight: 1.4 }}>• {f}</p>
                 ))}
               </div>
             </div>
@@ -566,7 +681,7 @@ export default function Profile() {
           </motion.div>
 
           {/* ── COL 9-12: Right Column ── */}
-          <motion.div variants={fadeUp} style={{ gridColumn: 'span 3', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <motion.div variants={fadeUp} style={{ gridColumn: isMobile ? '1 / -1' : 'span 3', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
             {/* Quick Stats */}
             <div style={{ background: `${accent}12`, padding: '1.25rem', borderRadius: '0.5rem', border: `2px solid ${accent}22` }}>
@@ -584,7 +699,7 @@ export default function Profile() {
             </div>
 
             {/* Her Spot */}
-            <div style={{ background: 'white', padding: '0.75rem', boxShadow: '0 12px 30px rgba(57,57,27,0.1)', transform: 'rotate(2deg)' }}>
+            <div style={{ background: 'white', padding: '0.75rem', boxShadow: '0 12px 30px rgba(57,57,27,0.1)', transform: isMobile ? 'none' : 'rotate(2deg)' }}>
               <div style={{ position: 'absolute', top: '-0.75rem', right: '25%', width: '4rem', height: '1.25rem', background: theme.washibg, transform: 'rotate(6deg)' }} />
               <div style={{ aspectRatio: '1', overflow: 'hidden', marginBottom: '0.75rem' }}>
                 <img src={roommate.spotImg} alt={roommate.campusSpot || 'Spot'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -601,11 +716,11 @@ export default function Profile() {
               padding: '1.25rem',
               borderRadius: '0.5rem',
               border: '1px dashed rgba(189,187,146,0.6)',
-              transform: 'rotate(-1.5deg)',
+              transform: isMobile ? 'none' : 'rotate(-1.5deg)',
             }}>
               <p style={{ ...handCss, fontSize: '1.2rem', color: accent, marginBottom: '0.75rem' }}>{roommate.name}'s To-Do:</p>
               <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                {roommate.todoList?.map((item, i) => (
+                {(todoList || roommate.todoList)?.map((item, i) => (
                   <li key={i} style={{ ...handCss, fontSize: '0.95rem', color: 'var(--on-surface)', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
                     <span style={{ color: accent, flexShrink: 0 }}>◻</span> {item}
                   </li>
@@ -634,24 +749,24 @@ export default function Profile() {
 
             {/* My First Impressions */}
             {(roommate.firstImpressions?.length > 0 || roommate.myFirstImpressionOf) && (
-               <div style={{ background: `${accent}10`, padding: '1.25rem', borderRadius: '0.5rem', border: `1.5px dashed ${accent}33` }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem' }}>
-                   <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: accent, fontVariationSettings: "'FILL' 1" }}>visibility</span>
-                   <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '0.85rem', color: accent }}>My First Impressions</h3>
-                 </div>
-                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                   {(roommate.firstImpressions || [roommate.myFirstImpressionOf]).map((imp, i) => imp && (
-                     <div key={i}>
-                       <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--on-surface-variant)', marginBottom: '0.4rem' }}>
-                         On {imp.personName}...
-                       </p>
-                       <p style={{ ...handCss, fontSize: '1.05rem', color: 'var(--on-surface)', lineHeight: 1.5 }}>
-                         {imp.text}
-                       </p>
-                     </div>
-                   ))}
-                 </div>
-               </div>
+              <div style={{ background: `${accent}10`, padding: '1.25rem', borderRadius: '0.5rem', border: `1.5px dashed ${accent}33` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem', color: accent, fontVariationSettings: "'FILL' 1" }}>visibility</span>
+                  <h3 style={{ fontFamily: 'var(--font-headline)', fontWeight: 800, fontSize: '0.85rem', color: accent }}>My First Impressions</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {(roommate.firstImpressions || [roommate.myFirstImpressionOf]).map((imp, i) => imp && (
+                    <div key={i}>
+                      <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--on-surface-variant)', marginBottom: '0.4rem' }}>
+                        On {imp.personName}...
+                      </p>
+                      <p style={{ ...handCss, fontSize: '1.05rem', color: 'var(--on-surface)', lineHeight: 1.5 }}>
+                        {imp.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </motion.div>
         </motion.div>
@@ -730,8 +845,8 @@ export default function Profile() {
             <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.75rem', color: 'var(--on-surface-variant)' }}>Leave {roommate.name} a note, a first impression, or a love message — choose your style!</p>
           </div>
 
-          {/* Note Input — only for logged-in non-owners */}
-          {currentUser && !isOwner(id) && (
+          {/* Note Input — only for logged-in non-owners and non-admins */}
+          {currentUser && !isOwner(id) && !isAdmin() && (
             <div style={{ marginBottom: '1.75rem' }}>
               {/* Template mini-picker */}
               <p style={{ fontFamily: 'var(--font-label)', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--on-surface-variant)', marginBottom: '0.5rem' }}>Choose note style:</p>
@@ -770,6 +885,7 @@ export default function Profile() {
                     position: 'relative',
                     ...(tpl.extraStyle || {}),
                     marginBottom: '0.75rem',
+                    maxWidth: '260px',
                   }}>
                     {tpl.washiStrips && (
                       <>
@@ -826,7 +942,7 @@ export default function Profile() {
             <div className="masonry-wall">
               {peerNotes.map((note, i) => {
                 const tpl = TEXT_TEMPLATES.find(t => t.id === note.template) || TEXT_TEMPLATES[0];
-                const rotation = [-1.5, 1.5, -1, 2][i % 4];
+                const rotation = isMobile ? 0 : [-1.5, 1.5, -1, 2][i % 4];
                 return (
                   <div key={note.id} className="masonry-item">
                     <div
@@ -874,7 +990,7 @@ export default function Profile() {
                           </button>
                         )}
                       </div>
-                      <p style={{ fontFamily: "'Nanum Pen Script', cursive", fontSize: '1rem', color: 'var(--on-surface)', lineHeight: 1.6 }}>{note.text}</p>
+                      <p style={{ fontFamily: "'Nanum Pen Script', cursive", fontSize: '1rem', color: 'var(--on-surface)', lineHeight: 1.6, maxHeight: '180px', overflowY: 'auto', paddingRight: '4px', whiteSpace: 'pre-wrap' }}>{note.text}</p>
                     </div>
                   </div>
                 );

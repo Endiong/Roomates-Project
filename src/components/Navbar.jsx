@@ -35,36 +35,35 @@ export default function Navbar() {
     <>
       <header style={{
         position: 'sticky',
-        top: '1rem',
+        top: 0,
         zIndex: 100,
-        width: 'calc(100% - 2rem)',
-        maxWidth: '80rem',
-        margin: '1rem auto 1.5rem',
-        borderRadius: '1.5rem',
+        width: '100%',
         transition: 'all 0.3s ease',
         background: scrolled
-          ? 'rgba(255, 255, 255, 0.4)'
-          : 'rgba(255, 255, 255, 0.2)',
+          ? 'rgba(255, 255, 255, 0.5)'
+          : 'rgba(255, 255, 255, 0.25)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         boxShadow: scrolled
-          ? 'inset 0 0 0 2px rgba(255,255,255,0.7), inset 0 0 20px rgba(255,255,255,0.3), 0 8px 32px rgba(0,0,0,0.1)'
-          : 'inset 0 0 0 2px rgba(255,255,255,0.5), inset 0 0 10px rgba(255,255,255,0.2), 0 4px 16px rgba(0,0,0,0.05)',
-        border: '1px solid rgba(255,255,255,0.6)',
+          ? 'inset 0 0 0 1px rgba(255,255,255,0.7), 0 4px 20px rgba(0,0,0,0.08)'
+          : 'inset 0 0 0 1px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.04)',
+        borderBottom: '1px solid rgba(189,187,146,0.25)',
       }}>
         <div style={{
-          padding: '0 1.5rem',
+          maxWidth: '80rem',
+          margin: '0 auto',
+          padding: '0 1rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          height: '4rem',
+          height: '3rem',
         }}>
 
           {/* Brand */}
-          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+          <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
             <span style={{
               fontFamily: "'Plus Jakarta Sans', sans-serif",
-              fontSize: '1.6rem',
+              fontSize: '1.3rem',
               fontWeight: 900,
               color: 'var(--primary)',
               lineHeight: 1,
@@ -76,7 +75,7 @@ export default function Navbar() {
               animate={{ scale: [1, 1.25, 1] }}
               transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
               className="material-symbols-outlined"
-              style={{ fontSize: '0.8rem', color: 'var(--tertiary)', fontVariationSettings: "'FILL' 1", marginBottom: '0.5rem' }}
+              style={{ fontSize: '0.7rem', color: 'var(--tertiary)', fontVariationSettings: "'FILL' 1", marginBottom: '0.4rem' }}
             >
               favorite
             </motion.span>
@@ -91,12 +90,12 @@ export default function Navbar() {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.35rem',
-                  padding: '0.4rem 0.9rem',
+                  gap: '0.3rem',
+                  padding: '0.35rem 0.8rem',
                   borderRadius: 'var(--radius-full)',
                   fontFamily: 'var(--font-headline)',
                   fontWeight: 600,
-                  fontSize: '0.85rem',
+                  fontSize: '0.82rem',
                   textDecoration: 'none',
                   transition: 'all 0.2s ease',
                   background: isActive(link.to)
@@ -119,24 +118,24 @@ export default function Navbar() {
                   }
                 }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>{link.icon}</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '0.95rem' }}>{link.icon}</span>
                 {link.label}
               </Link>
             ))}
           </nav>
 
           {/* Right Side */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             {currentUser ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 {/* User chip */}
                 <Link
                   to={`/profile/${currentUser.roommateId}`}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.35rem 0.85rem 0.35rem 0.35rem',
+                    gap: '0.4rem',
+                    padding: '0.3rem 0.75rem 0.3rem 0.3rem',
                     borderRadius: 'var(--radius-full)',
                     background: 'var(--surface-container)',
                     textDecoration: 'none',
@@ -147,8 +146,8 @@ export default function Navbar() {
                   onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
                 >
                   <div style={{
-                    width: '1.75rem',
-                    height: '1.75rem',
+                    width: '1.5rem',
+                    height: '1.5rem',
                     borderRadius: '50%',
                     background: 'var(--primary)',
                     display: 'flex',
@@ -157,16 +156,16 @@ export default function Navbar() {
                     color: 'white',
                     fontFamily: 'var(--font-headline)',
                     fontWeight: 800,
-                    fontSize: '0.75rem',
+                    fontSize: '0.7rem',
                   }}>
                     {currentUser.nickname?.charAt(0).toUpperCase()}
                   </div>
                   <span style={{
                     fontFamily: 'var(--font-headline)',
                     fontWeight: 600,
-                    fontSize: '0.8rem',
+                    fontSize: '0.78rem',
                     color: 'var(--on-surface)',
-                  }}>{currentUser.nickname}</span>
+                  }} className="user-nickname-label">{currentUser.nickname}</span>
                 </Link>
                 <button
                   onClick={logout}
@@ -176,7 +175,7 @@ export default function Navbar() {
                     border: 'none',
                     cursor: 'pointer',
                     color: 'var(--on-surface-variant)',
-                    padding: '0.35rem',
+                    padding: '0.3rem',
                     borderRadius: '50%',
                     display: 'flex',
                     transition: 'all 0.2s',
@@ -184,7 +183,7 @@ export default function Navbar() {
                   onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.background = 'var(--surface-container)'; }}
                   onMouseLeave={e => { e.currentTarget.style.color = 'var(--on-surface-variant)'; e.currentTarget.style.background = 'none'; }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>logout</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>logout</span>
                 </button>
               </div>
             ) : (
@@ -193,14 +192,14 @@ export default function Navbar() {
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.4rem',
-                  padding: '0.4rem 1rem',
+                  gap: '0.35rem',
+                  padding: '0.35rem 0.9rem',
                   borderRadius: 'var(--radius-full)',
                   background: 'var(--primary)',
                   color: 'var(--on-primary)',
                   fontFamily: 'var(--font-headline)',
                   fontWeight: 700,
-                  fontSize: '0.8rem',
+                  fontSize: '0.78rem',
                   textDecoration: 'none',
                   boxShadow: '0 2px 8px rgba(129,90,91,0.3)',
                   transition: 'all 0.2s',
@@ -208,7 +207,7 @@ export default function Navbar() {
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(129,90,91,0.4)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(129,90,91,0.3)'; }}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>lock</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>lock</span>
                 Sign In
               </Link>
             )}
@@ -224,7 +223,7 @@ export default function Navbar() {
                 border: 'none',
                 cursor: 'pointer',
                 color: 'var(--primary)',
-                padding: '0.35rem',
+                padding: '0.3rem',
                 borderRadius: 'var(--radius)',
               }}
             >
@@ -238,7 +237,7 @@ export default function Navbar() {
       {open && (
         <div style={{
           position: 'fixed',
-          top: '4rem',
+          top: '3rem',
           left: 0,
           right: 0,
           background: 'rgba(254,252,203,0.98)',
@@ -247,7 +246,7 @@ export default function Navbar() {
           zIndex: 99,
           borderBottom: '1px solid rgba(189,187,146,0.3)',
         }}>
-          <nav style={{ padding: '1rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          <nav style={{ padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
             {links.map(link => (
               <Link
                 key={link.to}
@@ -255,12 +254,12 @@ export default function Navbar() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.75rem',
-                  padding: '0.75rem 1rem',
+                  gap: '0.65rem',
+                  padding: '0.65rem 0.875rem',
                   borderRadius: 'var(--radius)',
                   fontFamily: 'var(--font-headline)',
                   fontWeight: 600,
-                  fontSize: '1rem',
+                  fontSize: '0.95rem',
                   textDecoration: 'none',
                   color: isActive(link.to) ? 'var(--primary)' : 'var(--on-surface)',
                   background: isActive(link.to) ? 'var(--primary-container)' : 'transparent',
@@ -270,15 +269,15 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            <div style={{ borderTop: '1px solid rgba(189,187,146,0.3)', marginTop: '0.5rem', paddingTop: '0.75rem' }}>
+            <div style={{ borderTop: '1px solid rgba(189,187,146,0.3)', marginTop: '0.5rem', paddingTop: '0.5rem' }}>
               {currentUser ? (
                 <button
                   onClick={logout}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '0.75rem',
-                    padding: '0.75rem 1rem', width: '100%',
+                    display: 'flex', alignItems: 'center', gap: '0.65rem',
+                    padding: '0.65rem 0.875rem', width: '100%',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--font-headline)', fontWeight: 600, fontSize: '1rem',
+                    fontFamily: 'var(--font-headline)', fontWeight: 600, fontSize: '0.95rem',
                     color: 'var(--on-surface-variant)', borderRadius: 'var(--radius)',
                   }}
                 >
@@ -289,9 +288,9 @@ export default function Navbar() {
                 <Link
                   to="/login"
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '0.75rem',
-                    padding: '0.75rem 1rem',
-                    fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '1rem',
+                    display: 'flex', alignItems: 'center', gap: '0.65rem',
+                    padding: '0.65rem 0.875rem',
+                    fontFamily: 'var(--font-headline)', fontWeight: 700, fontSize: '0.95rem',
                     color: 'var(--primary)', textDecoration: 'none',
                   }}
                 >
@@ -308,6 +307,7 @@ export default function Navbar() {
         @media (max-width: 768px) {
           .desktop-navbar { display: none !important; }
           .hamburger-btn { display: flex !important; }
+          .user-nickname-label { display: none; }
         }
       `}</style>
     </>
